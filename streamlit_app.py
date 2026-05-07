@@ -144,9 +144,13 @@ if load_method == "📤 Wczytaj plik Excel":
             st.error(f"❌ Błąd: {str(e)}")
 
 else:  # Use sample data
-    sample_path = 'sample_data/master_clients_sample.xlsx'
-    if os.path.exists(sample_path):
-        df, errors = load_excel_file(sample_path)
+    # Ścieżka dla Streamlit Cloud i local dev
+    import pathlib
+    current_dir = pathlib.Path(__file__).parent
+    sample_path = current_dir / 'sample_data' / 'master_clients_sample.xlsx'
+    
+    if sample_path.exists():
+        df, errors = load_excel_file(str(sample_path))
         if not errors:
             st.session_state.data_loaded = True
             st.session_state.df = df
