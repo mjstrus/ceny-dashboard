@@ -132,9 +132,13 @@ if st.session_state.df is not None:
     st.session_state.df = df_with_prices
     
     st.info("""
-    **Formuła:**
-    - Bez rabatu: Cena_Nowa = Cena_Stara × 1.10 (+10%)
-    - Z rabatem: Cena_Nowa = Cena_Stara × 1.20 (+10% wzrost + 10% anulowanie rabatu)
+    **Formuła Cena_Nowa:**
+    
+    **Grupa 1: Miał rabat 10% (Miał_Rabat_10% = 1)**
+    - Cena_Nowa = Cena_Stara (wyrównanie do cennika, likwidacja rabatu)
+    
+    **Grupa 2: Bez rabatu (Miał_Rabat_10% = 0)**
+    - Cena_Nowa = Cena_Stara × 1.10 (+10% wzrost od cennika)
     """)
     
     # Pokaż tabelę z auto-kalkulacją
