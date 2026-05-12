@@ -44,9 +44,15 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     df = df.dropna(subset=['ID'])
     
     # Oczyść typ umowy: trim + standardyzuj
-    df['Typ_Umowy'] = df['Typ_Umowy'].str.strip().str.replace('KPiR', 'KPIR', regex=False)
-    df['Typ_Umowy'] = df['Typ_Umowy'].str.replace('Kpir', 'KPIR', regex=False)
-    df['Typ_Umowy'] = df['Typ_Umowy'].str.capitalize()
+    df['Typ_Umowy'] = df['Typ_Umowy'].str.strip().str.upper()
+    
+    # Mapowanie do standardowych nazw
+    typ_map = {
+        'KH': 'Kh',
+        'KPIR': 'KPIR',
+        'RYCZAŁT': 'Ryczałt'
+    }
+    df['Typ_Umowy'] = df['Typ_Umowy'].map(typ_map).fillna(df['Typ_Umowy'])
     
     # Oczyść VAT (trim)
     df['VAT'] = df['VAT'].str.strip()
