@@ -24,10 +24,12 @@ def calculate_new_prices(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     
     # Oblicz nową cenę
-    # Wzór: Cena_Stara × (1 + 0.10 + (0.10 jeśli miał rabat))
+    # Logika:
+    # - Miał_Rabat_10% = 1 → Cena_Nowa = Cena_Stara (wyrównanie, likwidacja rabatu)
+    # - Miał_Rabat_10% = 0 → Cena_Nowa = Cena_Stara × 1.10 (+10% wzrost)
     df['Cena_Nowa_Auto'] = df.apply(
-        lambda row: row['Cena_Stara'] * 1.10 if row['Miał_Rabat_10%'] == 0 
-                    else row['Cena_Stara'] * 1.20,
+        lambda row: row['Cena_Stara'] if row['Miał_Rabat_10%'] == 1 
+                    else row['Cena_Stara'] * 1.10,
         axis=1
     ).round(2)
     
