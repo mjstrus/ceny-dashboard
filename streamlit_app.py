@@ -1,6 +1,7 @@
 """
-Ceny Dashboard — SIMPLIFIED VERSION
-Tylko Unit 1 (import) + Unit 2 (input cen)
+Ceny Dashboard — EDYTOWALNA TABELA
+Unit 1: Import danych
+Unit 2: Edycja cen (VIP/Standard, Cena_Docelowa)
 """
 
 import streamlit as st
@@ -8,6 +9,7 @@ import pandas as pd
 import os
 import pathlib
 from data_loader import load_excel_file, get_display_dataframe
+from calculate_new_prices import calculate_new_prices, get_price_table
 
 # ============================================================================
 # PAGE CONFIG
@@ -20,7 +22,7 @@ st.set_page_config(
 )
 
 st.title("💰 Dashboard Ujednolicenia Cen")
-st.markdown("Abacus Centrum | Walidacja nowych cen")
+st.markdown("Abacus Centrum | Edycja cen dla klientów")
 
 # ============================================================================
 # SESSION STATE
@@ -28,16 +30,6 @@ st.markdown("Abacus Centrum | Walidacja nowych cen")
 
 if 'df' not in st.session_state:
     st.session_state.df = None
-
-if 'new_prices' not in st.session_state:
-    st.session_state.new_prices = {
-        'Kh_vat': 500,
-        'Kh_no_vat': 400,
-        'KPIR_vat': 350,
-        'KPIR_no_vat': 280,
-        'Ryczalt_vat': 600,
-        'Ryczalt_no_vat': 480,
-    }
 
 # ============================================================================
 # UNIT 1: WCZYTANIE DANYCH
@@ -109,68 +101,83 @@ if st.session_state.df is not None:
         st.metric("Liczba klientów", len(st.session_state.df))
     with col2:
         avg_price = st.session_state.df['Cena_Stara'].mean()
-        st.metric("Śr. cena", f"{avg_price:.0f} PLN")
+        st.metric("Śr. cena (cennik)", f"{avg_price:.0f} PLN")
     with col3:
         avg_doc = st.session_state.df['Doc_Avg'].mean()
         st.metric("Śr. dokumentów/mc", f"{avg_doc:.1f}")
     
-    # Tabela
+    # Tabela wczytanych danych
     df_display = get_display_dataframe(st.session_state.df)
     st.dataframe(df_display, use_container_width=True, hide_index=True)
     
     # ====================================================================
-    # UNIT 2: NOWE CENY (AUTO-KALKULACJA + OVERRIDE)
+    # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
     # ====================================================================
     
     st.divider()
-    st.header("💵 Krok 2: Nowe Ceny")
+    st.header("💵 Krok 2: Edycja Cen")
     
-    from calculate_new_prices import calculate_new_prices, get_price_table
+    st.info("""
+    **Cena_Docelowa dla WSZYSTKICH: Cennik + 10%** (Cena_Stara × 1.10)
+    
+    Ale to oznacza RÓŻNE rzeczy:
+    - **Bez rabatu:** Płacili 100 → Będą 110 (+10%)
+    - **Z rabatem:** Płacili 90 → Będą 110 (+22%, bo likwidacja rabatu + wzrost)
+    
+    **Edytuj kolumny:**
+    - 👑 Grupa Klienta: VIP / Standard
+    - 💰 Nowa Cena: zmień ręcznie dla VIP
+    """)
     
     # Auto-oblicz ceny
     df_with_prices = calculate_new_prices(st.session_state.df)
-    st.session_state.df = df_with_prices
     
-    st.info("""
-    **Formuła Cena_Nowa:**
+    # Przygotuj tabelę do edycji
+    df_editable = get_price_table(df_with_prices)
     
-    **Grupa 1: Miał rabat 10% (Miał_Rabat_10% = 1)**
-    - Cena_Nowa = Cena_Stara (wyrównanie do cennika, likwidacja rabatu)
+    # EDYTOWALNA TABELA
+    st.subheader("Edytuj tabele poniżej")
     
-    **Grupa 2: Bez rabatu (Miał_Rabat_10% = 0)**
-    - Cena_Nowa = Cena_Stara × 1.10 (+10% wzrost od cennika)
-    """)
+    edited_df = st.data_editor(
+        df_editable,
+        use_container_width=True,
+        hide_index=True,
+        key="price_editor",
+        column_config={
+            "👑 Grupa Klienta": st.column_config.SelectboxColumn(
+                "Grupa",
+                options=["Standard", "VIP"],
+                required=True
+            ),
+            "💰 Nowa Cena": st.column_config.NumberColumn(
+                "Nowa Cena",
+                min_value=0,
+                step=1.0,
+                format="%.2f"
+            ),
+        }
+    )
     
-    # Pokaż tabelę z auto-kalkulacją
-    st.subheader("Ceny (auto-obliczone)")
-    df_prices = get_price_table(df_with_prices)
-    st.dataframe(df_prices, use_container_width=True, hide_index=True)
+    # Button: Zatwierdź zmiany
+    if st.button("✅ Zatwierdź wszystkie zmiany", type="primary"):
+        # Zaitegruj zmiany z oryginalnym DataFrame
+        for idx, row in edited_df.iterrows():
+            client_id = row['ID']
+            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Grupa_Klienta'] = row['👑 Grupa Klienta']
+            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena']
+        
+        st.success("✓ Zmiany zatwierdzone!")
+        st.info(f"📊 {len(edited_df)} klientów zaktualizowano")
     
-    # Option: override dla VIP
-    st.subheader("✏️ Override dla VIP (opcjonalnie)")
-    with st.expander("Edytuj ceny dla konkretnych klientów", expanded=False):
-        override_id = st.number_input("ID klienta do edycji", min_value=1)
-        if override_id in st.session_state.df['ID'].values:
-            override_price = st.number_input(
-                f"Nowa cena dla ID {override_id}",
-                value=float(st.session_state.df[st.session_state.df['ID'] == override_id]['Cena_Nowa'].values[0]),
-                step=10.0
-            )
-            if st.button(f"✓ Zatwierdź dla ID {override_id}"):
-                st.session_state.df.loc[st.session_state.df['ID'] == override_id, 'Cena_Nowa'] = override_price
-                st.success(f"✓ Zaktualizowano!")
-                st.rerun()
-        else:
-            st.warning(f"ID {override_id} nie znalezione")
-    
-    st.success("✓ Ceny gotowe. Unit 3 (Analiza Wpływu) wkrótce...")
+    st.divider()
+    st.success("✓ Gotowe! Możesz teraz wyeksportować raport lub kontynuować edycję.")
 
 else:
-    st.warning("Wczytaj dane aby kontynuować")
+    st.warning("📥 Wczytaj dane aby kontynuować")
 
 # ============================================================================
 # FOOTER
 # ============================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v1.0 (Simplified)** | Abacus Centrum")
+st.markdown("**Ceny Dashboard v2.0** | Abacus Centrum | Edytowalna tabela")
