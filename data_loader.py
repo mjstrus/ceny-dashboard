@@ -29,8 +29,9 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     # Walidacja struktury
     errors = []
     required_columns = {
-        'ID', 'Nazwa', 'Typ_Umowy', 'VAT', 'Cena_Bazowa',
-        'Doc_Marzec', 'Doc_Kwiecien', 'Doc_Maj', 'Czy_Rabat'
+        'ID', 'Nazwa', 'Typ_Umowy', 'VAT', 'Cena_Stara',
+        'Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń', 'Miał_Rabat_10%',
+        'Doc_Średnia', 'Grupa_Widełk', 'Grupa_Klienta', 'Cena_Nowa'
     }
     
     missing = required_columns - set(df.columns)
@@ -46,8 +47,12 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     if errors:
         return None, errors
     
-    # Oblicz średnią dokumentów
-    df['Doc_Avg'] = df[['Doc_Marzec', 'Doc_Kwiecien', 'Doc_Maj']].mean(axis=1).round(1)
+    # Jeśli nie ma Doc_Średnia, oblicz ją
+    if 'Doc_Średnia' not in df.columns:
+        df['Doc_Średnia'] = df[['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń']].mean(axis=1).round(1)
+    
+    # Alias do Doc_Avg
+    df['Doc_Avg'] = df['Doc_Średnia']
     
     # Ustandaryzuj kolumny
     df['Typ_Pełny'] = df['Typ_Umowy'] + ' ' + df['VAT']
@@ -80,12 +85,12 @@ def validate_data(df: pd.DataFrame) -> list:
         errors.append(f"❌ Niepoprawny typ umowy: {invalid['Typ_Umowy'].unique()}")
     
     # Sprawdź ceny > 0
-    invalid_prices = df[df['Cena_Bazowa'] <= 0]
+    invalid_prices = df[df['Cena_Stara'] <= 0]
     if not invalid_prices.empty:
         errors.append(f"❌ Cena <= 0 dla ID: {list(invalid_prices['ID'].values)}")
     
     # Sprawdź ilości dokumentów
-    for col in ['Doc_Marzec', 'Doc_Kwiecien', 'Doc_Maj']:
+    for col in ['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń']:
         if df[col].isna().any():
             na_ids = df[df[col].isna()]['ID'].unique()
             errors.append(f"⚠️  Brakuje {col} dla ID: {list(na_ids)}")
@@ -100,12 +105,12 @@ def get_display_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame z wybranym i przeformatowanym kolumnami
     """
-    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Cena_Bazowa', 'Doc_Avg', 'Czy_Rabat']
+    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Cena_Stara', 'Doc_Avg', 'Miał_Rabat_10%']
     
     df_display = df[display_cols].copy()
-    df_display.columns = ['ID', 'Nazwa', 'Typ Umowy', 'Cena Bazowa', 'Śr. Dokumentów/mc', 'Ma Rabat']
+    df_display.columns = ['ID', 'Nazwa', 'Typ Umowy', 'Cena Stara', 'Śr. Dokumentów/mc', 'Ma Rabat']
     
-    # Format: Czy_Rabat -> Tak/Nie
+    # Format: Miał_Rabat_10% -> Tak/Nie
     df_display['Ma Rabat'] = df_display['Ma Rabat'].map({1: '✓ Tak', 0: '✗ Nie'})
     
     return df_display
