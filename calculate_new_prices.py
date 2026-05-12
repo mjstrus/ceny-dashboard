@@ -1,183 +1,81 @@
 """
-Ceny Dashboard — EDYTOWALNA TABELA
-Unit 1: Import danych
-Unit 2: Edycja cen (VIP/Standard, Cena_Docelowa)
+Unit 2 Helper: Calculate New Prices (POPRAWIONA LOGIKA)
+
+Cena_Docelowa = Cena_Stara × 1.10 (ZAWSZE, dla WSZYSTKICH)
+
+Ale pokazuję:
+- Co faktycznie płacili (z rabatem lub bez)
+- Wzrost od faktycznej ceny (różny dla każdego)
+- Wzrost od cennika (zawsze +10%)
 """
 
-import streamlit as st
 import pandas as pd
-import os
-import pathlib
-from data_loader import load_excel_file, get_display_dataframe
-from calculate_new_prices import calculate_new_prices, get_price_table
 
-# ============================================================================
-# PAGE CONFIG
-# ============================================================================
 
-st.set_page_config(
-    page_title="Ceny Dashboard",
-    page_icon="💰",
-    layout="wide"
-)
-
-st.title("💰 Dashboard Ujednolicenia Cen")
-st.markdown("Abacus Centrum | Edycja cen dla klientów")
-
-# ============================================================================
-# SESSION STATE
-# ============================================================================
-
-if 'df' not in st.session_state:
-    st.session_state.df = None
-
-# ============================================================================
-# UNIT 1: WCZYTANIE DANYCH
-# ============================================================================
-
-st.header("📥 Krok 1: Wczytaj Dane")
-
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    load_method = st.radio(
-        "Opcje:",
-        ["📂 Dane przykładowe (demo)", "📤 Wczytaj plik Excel"],
-        horizontal=True
-    )
-
-with col2:
-    if st.button("🔄 Odśwież"):
-        st.session_state.df = None
-        st.rerun()
-
-# Wczytaj dane
-if load_method == "📂 Dane przykładowe (demo)":
-    current_dir = pathlib.Path(__file__).parent
-    sample_path = current_dir / 'sample_data' / 'master_clients_sample.xlsx'
+def calculate_new_prices(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Oblicz ceny docelowe dla każdego klienta.
     
-    if sample_path.exists():
-        df, errors = load_excel_file(str(sample_path))
-        if not errors:
-            st.session_state.df = df
-            st.success(f"✓ Wczytano {len(df)} klientów (demo data)")
-        else:
-            st.error(f"Błąd: {errors}")
-    else:
-        st.error(f"Nie znaleziono: {sample_path}")
-
-else:  # Upload Excel
-    uploaded_file = st.file_uploader("Wybierz .xlsx", type=['xlsx'])
-    if uploaded_file is not None:
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-            tmp.write(uploaded_file.getbuffer())
-            tmp_path = tmp.name
-        
-        df, errors = load_excel_file(tmp_path)
-        try:
-            os.unlink(tmp_path)
-        except:
-            pass
-        
-        if errors:
-            st.error(f"Błąd: {errors}")
-        else:
-            st.session_state.df = df
-            st.success(f"✓ Wczytano {len(df)} klientów")
-
-# ============================================================================
-# POKAZ DANE
-# ============================================================================
-
-if st.session_state.df is not None:
-    st.divider()
+    Logika:
+    - Cena_Docelowa = Cena_Stara × 1.10 (ZAWSZE, dla WSZYSTKICH)
+    - Cena_Faktyczna = co faktycznie płacili:
+      * Z rabatem: Cena_Stara × 0.90
+      * Bez rabatu: Cena_Stara
+    - Wzrost_% = (Docelowa - Faktyczna) / Faktyczna × 100
+    - Wzrost_Od_Cennika = zawsze +10%
     
-    st.subheader("📊 Wczytane Dane")
+    Args:
+        df: DataFrame z kolumnami Cena_Stara, Miał_Rabat_10%
     
-    # Metryki
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Liczba klientów", len(st.session_state.df))
-    with col2:
-        avg_price = st.session_state.df['Cena_Stara'].mean()
-        st.metric("Śr. cena (cennik)", f"{avg_price:.0f} PLN")
-    with col3:
-        avg_doc = st.session_state.df['Doc_Avg'].mean()
-        st.metric("Śr. dokumentów/mc", f"{avg_doc:.1f}")
+    Returns:
+        DataFrame z nowymi kolumnami
+    """
     
-    # Tabela wczytanych danych
-    df_display = get_display_dataframe(st.session_state.df)
-    st.dataframe(df_display, use_container_width=True, hide_index=True)
+    df = df.copy()
     
-    # ====================================================================
-    # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
-    # ====================================================================
+    # DOCELOWA: Zawsze +10% od cennika (dla WSZYSTKICH)
+    df['Cena_Docelowa'] = (df['Cena_Stara'] * 1.10).round(2)
     
-    st.divider()
-    st.header("💵 Krok 2: Edycja Cen")
-    
-    st.info("""
-    **Cena_Docelowa dla WSZYSTKICH: Cennik + 10%** (Cena_Stara × 1.10)
-    
-    Ale to oznacza RÓŻNE rzeczy:
-    - **Bez rabatu:** Płacili 100 → Będą 110 (+10%)
-    - **Z rabatem:** Płacili 90 → Będą 110 (+22%, bo likwidacja rabatu + wzrost)
-    
-    **Edytuj kolumny:**
-    - 👑 Grupa Klienta: VIP / Standard
-    - 💰 Nowa Cena: zmień ręcznie dla VIP
-    """)
-    
-    # Auto-oblicz ceny
-    df_with_prices = calculate_new_prices(st.session_state.df)
-    
-    # Przygotuj tabelę do edycji
-    df_editable = get_price_table(df_with_prices)
-    
-    # EDYTOWALNA TABELA
-    st.subheader("Edytuj tabele poniżej")
-    
-    edited_df = st.data_editor(
-        df_editable,
-        use_container_width=True,
-        hide_index=True,
-        key="price_editor",
-        column_config={
-            "👑 Grupa Klienta": st.column_config.SelectboxColumn(
-                "Grupa",
-                options=["Standard", "VIP"],
-                required=True
-            ),
-            "💰 Nowa Cena": st.column_config.NumberColumn(
-                "Nowa Cena",
-                min_value=0,
-                step=1.0,
-                format="%.2f"
-            ),
-        }
+    # FAKTYCZNA: co faktycznie płacili
+    df['Cena_Faktyczna'] = df.apply(
+        lambda row: (row['Cena_Stara'] * 0.90).round(2) if row['Miał_Rabat_10%'] == 1 
+                    else row['Cena_Stara'],
+        axis=1
     )
     
-    # Button: Zatwierdź zmiany
-    if st.button("✅ Zatwierdź wszystkie zmiany", type="primary"):
-        # Zaitegruj zmiany z oryginalnym DataFrame
-        for idx, row in edited_df.iterrows():
-            client_id = row['ID']
-            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Grupa_Klienta'] = row['👑 Grupa Klienta']
-            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena']
-        
-        st.success("✓ Zmiany zatwierdzone!")
-        st.info(f"📊 {len(edited_df)} klientów zaktualizowano")
+    # WZROST: od faktycznej ceny
+    df['Wzrost_Kwota'] = (df['Cena_Docelowa'] - df['Cena_Faktyczna']).round(2)
+    df['Wzrost_%_Od_Faktycznej'] = ((df['Cena_Docelowa'] - df['Cena_Faktyczna']) / df['Cena_Faktyczna'] * 100).round(2)
     
-    st.divider()
-    st.success("✓ Gotowe! Możesz teraz wyeksportować raport lub kontynuować edycję.")
+    # Wzrost od cennika (zawsze +10%)
+    df['Wzrost_%_Od_Cennika'] = 10.0
+    
+    return df
 
-else:
-    st.warning("📥 Wczytaj dane aby kontynuować")
 
-# ============================================================================
-# FOOTER
-# ============================================================================
-
-st.divider()
-st.markdown("**Ceny Dashboard v2.0** | Abacus Centrum | Edytowalna tabela")
+def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Przygotuj tabelę do edycji w Unit 2 (st.data_editor).
+    
+    Kolumny do edycji:
+    - Grupa_Klienta (VIP/Standard)
+    - Cena_Docelowa (ręczna edycja dla VIP)
+    """
+    
+    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Cena_Stara', 'Miał_Rabat_10%', 
+                    'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 
+                    'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Wzrost_%_Od_Cennika']
+    
+    # Dodaj Grupa_Klienta jeśli jej brak
+    if 'Grupa_Klienta' not in df.columns:
+        df['Grupa_Klienta'] = 'Standard'
+    
+    df_display = df[display_cols].copy()
+    df_display.columns = ['ID', 'Nazwa', 'Typ', 'Cennik', 'Rabat?', 
+                          'Płacili', '👑 Grupa Klienta', '💰 Nowa Cena', 
+                          'Wzrost PLN', 'Wzrost %', 'Wzrost Cennika %']
+    
+    # Format
+    df_display['Rabat?'] = df_display['Rabat?'].map({1: '✓ TAK', 0: '✗ Nie'})
+    
+    return df_display
