@@ -33,6 +33,10 @@ def calculate_new_prices(df: pd.DataFrame) -> pd.DataFrame:
     
     df = df.copy()
     
+    # Konwertuj kolumny na właściwe typy
+    df['Miał_Rabat_10%'] = df['Miał_Rabat_10%'].astype(int)
+    df['Cena_Stara'] = df['Cena_Stara'].astype(float)
+    
     # DOCELOWA: Zawsze +10% od cennika (dla WSZYSTKICH)
     df['Cena_Docelowa'] = (df['Cena_Stara'] * 1.10).round(2)
     
