@@ -108,7 +108,7 @@ if st.session_state.df is not None:
     with col1:
         st.metric("Liczba klientów", len(st.session_state.df))
     with col2:
-        avg_price = st.session_state.df['Cena_Bazowa'].mean()
+        avg_price = st.session_state.df['Cena_Stara'].mean()
         st.metric("Śr. cena", f"{avg_price:.0f} PLN")
     with col3:
         avg_doc = st.session_state.df['Doc_Avg'].mean()
