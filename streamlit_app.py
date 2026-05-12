@@ -119,30 +119,47 @@ if st.session_state.df is not None:
     st.dataframe(df_display, use_container_width=True, hide_index=True)
     
     # ====================================================================
-    # UNIT 2: NOWE CENY
+    # UNIT 2: NOWE CENY (AUTO-KALKULACJA + OVERRIDE)
     # ====================================================================
     
     st.divider()
     st.header("💵 Krok 2: Nowe Ceny")
     
-    col1, col2, col3 = st.columns(3)
+    from calculate_new_prices import calculate_new_prices, get_price_table
     
-    with col1:
-        st.subheader("Kh")
-        st.session_state.new_prices['Kh_vat'] = st.number_input("Kh z VAT", value=500, step=10)
-        st.session_state.new_prices['Kh_no_vat'] = st.number_input("Kh bez VAT", value=400, step=10)
+    # Auto-oblicz ceny
+    df_with_prices = calculate_new_prices(st.session_state.df)
+    st.session_state.df = df_with_prices
     
-    with col2:
-        st.subheader("KPIR")
-        st.session_state.new_prices['KPIR_vat'] = st.number_input("KPIR z VAT", value=350, step=10)
-        st.session_state.new_prices['KPIR_no_vat'] = st.number_input("KPIR bez VAT", value=280, step=10)
+    st.info("""
+    **Formuła:**
+    - Bez rabatu: Cena_Nowa = Cena_Stara × 1.10 (+10%)
+    - Z rabatem: Cena_Nowa = Cena_Stara × 1.20 (+10% wzrost + 10% anulowanie rabatu)
+    """)
     
-    with col3:
-        st.subheader("Ryczałt")
-        st.session_state.new_prices['Ryczalt_vat'] = st.number_input("Ryczałt z VAT", value=600, step=10)
-        st.session_state.new_prices['Ryczalt_no_vat'] = st.number_input("Ryczałt bez VAT", value=480, step=10)
+    # Pokaż tabelę z auto-kalkulacją
+    st.subheader("Ceny (auto-obliczone)")
+    df_prices = get_price_table(df_with_prices)
+    st.dataframe(df_prices, use_container_width=True, hide_index=True)
     
-    st.info("✓ Ceny ustawione. Dashboard v1.0 (simplified) — Units 3-6 będą w następnej iteracji")
+    # Option: override dla VIP
+    st.subheader("✏️ Override dla VIP (opcjonalnie)")
+    with st.expander("Edytuj ceny dla konkretnych klientów", expanded=False):
+        override_id = st.number_input("ID klienta do edycji", min_value=1)
+        if override_id in st.session_state.df['ID'].values:
+            override_price = st.number_input(
+                f"Nowa cena dla ID {override_id}",
+                value=float(st.session_state.df[st.session_state.df['ID'] == override_id]['Cena_Nowa'].values[0]),
+                step=10.0
+            )
+            if st.button(f"✓ Zatwierdź dla ID {override_id}"):
+                st.session_state.df.loc[st.session_state.df['ID'] == override_id, 'Cena_Nowa'] = override_price
+                st.success(f"✓ Zaktualizowano!")
+                st.rerun()
+        else:
+            st.warning(f"ID {override_id} nie znalezione")
+    
+    st.success("✓ Ceny gotowe. Unit 3 (Analiza Wpływu) wkrótce...")
 
 else:
     st.warning("Wczytaj dane aby kontynuować")
