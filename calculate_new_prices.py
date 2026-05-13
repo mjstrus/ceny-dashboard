@@ -133,8 +133,20 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
         except:
             return 0.0
     
+    # WZROST gdyby nie było rabatu (od Cena_Stara)
+    def calculate_wzrost_bez_rabatu(row):
+        try:
+            if row['Cena_Stara'] > 0:
+                wzrost = ((row['Cena_Docelowa'] - row['Cena_Stara']) / row['Cena_Stara'] * 100)
+                return round(wzrost, 2)
+            else:
+                return 0.0
+        except:
+            return 0.0
+    
     df['Wzrost_Kwota'] = (df['Cena_Docelowa'] - df['Cena_Faktyczna']).round(2)
     df['Wzrost_%_Od_Faktycznej'] = df.apply(calculate_wzrost, axis=1)
+    df['Wzrost_%_Bez_Rabatu'] = df.apply(calculate_wzrost_bez_rabatu, axis=1)
     
     # STATUS SEGMENTACJI (Zielony/Żółty/Czerwony)
     def assign_status(row):
@@ -162,7 +174,7 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
     
     display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Status', 'Cena_Range', 'Cena_Stara', 'Miał_Rabat_10%', 
                     'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 
-                    'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej']
+                    'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Wzrost_%_Bez_Rabatu']
     
     # Sprawdź czy wszystkie kolumny istnieją
     for col in display_cols:
@@ -179,12 +191,12 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
                   else '❓ Nieznany'
     )
     
-    df_display.columns = ['ID', 'Nazwa', 'Typ', '📊 Status', 'Widełka', 'Cennik', 'Rabat?', 
-                          'Płacili', '👑 Grupa Klienta', '💰 Nowa Cena', 
-                          'Wzrost PLN', 'Wzrost %']
+    df_display.columns = ['ID', 'Nazwa', 'Typ', '📊 Status', 'Widełka', 'Cennik (bez rabatu)', 'Miał rabat?', 
+                          'Płacili (mc)', '👑 Grupa Klienta', '💰 Nowa Cena', 
+                          'Wzrost PLN', 'Wzrost % (z rabatem)', 'Wzrost % (gdyby brak rabatu)']
     
     # Format
-    df_display['Rabat?'] = df_display['Rabat?'].apply(
+    df_display['Miał rabat?'] = df_display['Miał rabat?'].apply(
         lambda x: '✓ TAK' if x == 1 else '✗ Nie' if x == 0 else '?'
     )
     
