@@ -119,17 +119,8 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     
     df['Cena_Docelowa'] = df.apply(get_cena_docelowa, axis=1)
     
-    # FAKTYCZNA: co faktycznie płacili
-    def calculate_faktyczna(row):
-        try:
-            if row['Miał_Rabat_10%'] == 1:
-                return round(row['Cena_Stara'] * 0.90, 2)
-            else:
-                return row['Cena_Stara']
-        except:
-            return row['Cena_Stara']
-    
-    df['Cena_Faktyczna'] = df.apply(calculate_faktyczna, axis=1)
+    # FAKTYCZNA: co faktycznie płacili (Cena_Stara już zawiera rabat!)
+    df['Cena_Faktyczna'] = df['Cena_Stara'].round(2)
     
     # WZROST: od faktycznej ceny
     def calculate_wzrost(row):
