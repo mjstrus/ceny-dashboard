@@ -199,18 +199,20 @@ if st.session_state.df is not None:
     st.header("💵 Unit 2: Edycja Cen Klientów")
     
     st.info("""
-    **Cena_Docelowa dla WSZYSTKICH: Cennik + (rabat + wzrost)**
+    **Cena_Docelowa = NOWY CENNIK z Unit 0** (na podstawie Typ + VAT + Doc_Avg)
     
-    - **Bez rabatu:** Płacili 100 → Będą 110 (+10%)
-    - **Z rabatem:** Płacili 90 → Będą 110 (+22%, bo likwidacja rabatu + wzrost)
+    **Porównanie:**
+    - **Płacili:** Cena_Stara (lub Cena_Stara × 0.90 jeśli miał rabat)
+    - **Będą płacić:** Cena_Docelowa (z Unit 0 cennnika + widełki)
+    - **Wzrost:** różnica (zależy od rabatu + zakresu dokumentów)
     
-    **Edytuj kolumny:**
-    - 👑 Grupa Klienta: VIP / Standard
-    - 💰 Nowa Cena: zmień ręcznie dla VIP
+    **Przykład:**
+    - Bez rabatu, 15 doc → grupa 11-20 → cena z Unit 0 dla 11-20
+    - Z rabatem, 50 doc → grupa 21-50 → cena z Unit 0 dla 21-50 (koniec rabatu!)
     """)
     
-    # Auto-oblicz ceny
-    df_with_prices = calculate_new_prices(st.session_state.df)
+    # Auto-oblicz ceny (na podstawie cennnika z Unit 0)
+    df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
     
     # Przygotuj tabelę do edycji
     df_editable = get_price_table(df_with_prices)
