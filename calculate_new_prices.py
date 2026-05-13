@@ -149,6 +149,13 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     if 'Grupa_Klienta' not in df.columns:
         df['Grupa_Klienta'] = 'Standard'
     
+    # Logika FREE: jeśli Grupa_Klienta=FREE, to Cena_Docelowa=0 (gratis!)
+    free_mask = df['Grupa_Klienta'].str.upper() == 'FREE'
+    if free_mask.any():
+        df.loc[free_mask, 'Cena_Docelowa'] = 0.0
+        df.loc[free_mask, 'Wzrost_Kwota'] = -df.loc[free_mask, 'Cena_Faktyczna']
+        df.loc[free_mask, 'Wzrost_%_Od_Faktycznej'] = -100.0
+    
     return df
 
 
