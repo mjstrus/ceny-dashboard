@@ -325,10 +325,15 @@ if st.session_state.df is not None:
     - **VIP:** cena edytowalna (negocjacje)
     - **FREE:** 0 PLN (gratis dla zaprzyjaźnionych)
     
-    **Porównanie:**
-    - **Płacili (mc):** Cena_Faktyczna (Cena_Stara lub Cena_Stara × 0.90 jeśli miał rabat)
-    - **Będą płacić (mc):** Cena_Docelowa (z cennnika + widełki)
-    - **Wzrost:** różnica (zależy od rabatu + zakresu dokumentów)
+    **Dwie kolumny wzrostu:**
+    - **Wzrost % (z rabatem):** Rzeczywisty wzrost od ceny którą płacili (z uwzględnieniem rabatu)
+    - **Wzrost % (gdyby brak rabatu):** Wzrost gdyby nigdy nie mieli rabatu za Saldeo — pokazuje prawdziwy wzrost ceny cennnika
+    
+    **Przykład:**
+    - Klient miał rabat 10%, płacił 900 PLN
+    - Nowa cena: 1100 PLN
+    - Wzrost z rabatem: (1100-900)/900 = 22%
+    - Wzrost bez rabatu: (1100-1000)/1000 = 10% ← to rzeczywisty wzrost ceny
     """)
     
     # Przygotuj tabelę do edycji
