@@ -160,7 +160,7 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
     Przygotuj tabelę do edycji w Unit 2 (st.data_editor).
     """
     
-    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Cena_Range', 'Cena_Stara', 'Miał_Rabat_10%', 
+    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Status', 'Cena_Range', 'Cena_Stara', 'Miał_Rabat_10%', 
                     'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 
                     'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej']
     
@@ -170,8 +170,17 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = None
     
     df_display = df[display_cols].copy()
-    df_display.columns = ['ID', 'Nazwa', 'Typ', 'Widełka', 'Cennik', 'Rabat?', 
-                          'Płacili', '👑 Grupa Klienta', '💰 Nowa Cena (Unit 0)', 
+    
+    # Formatuj Status z kolorami
+    df_display['Status'] = df_display['Status'].apply(
+        lambda x: '🟢 Zielony' if x == 'Zielony' 
+                  else '🟡 Żółty' if x == 'Żółty'
+                  else '🔴 Czerwony' if x == 'Czerwony'
+                  else '❓ Nieznany'
+    )
+    
+    df_display.columns = ['ID', 'Nazwa', 'Typ', '📊 Status', 'Widełka', 'Cennik', 'Rabat?', 
+                          'Płacili', '👑 Grupa Klienta', '💰 Nowa Cena', 
                           'Wzrost PLN', 'Wzrost %']
     
     # Format
