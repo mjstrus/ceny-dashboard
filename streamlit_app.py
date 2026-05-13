@@ -192,6 +192,105 @@ if st.session_state.df is not None:
     st.dataframe(df_display, use_container_width=True, hide_index=True)
     
     # ====================================================================
+    # UNIT 3: PODSUMOWANIE (SUMMARY DASHBOARD)
+    # ====================================================================
+    
+    st.divider()
+    st.header("📊 Unit 3: Podsumowanie Listy")
+    
+    from summary_generator import generate_summary, get_alerts
+    
+    # Oblicz summary
+    summary = generate_summary(df_with_prices)
+    alerts = get_alerts(summary)
+    
+    # Karty metryczne
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Liczba Klientów",
+            summary.get('Liczba_Klientów_Razem', 0),
+            f"Standard: {summary.get('Liczba_Klientów_Standard', 0)}"
+        )
+    
+    with col2:
+        st.metric(
+            "VIP",
+            summary.get('Liczba_Klientów_VIP', 0),
+            f"FREE: {summary.get('Liczba_Klientów_FREE', 0)}"
+        )
+    
+    with col3:
+        st.metric(
+            "Średnia Docs/Klient",
+            f"{summary.get('Srednia_Doc_Klienta', 0):.1f}",
+            f"Cena przed: {summary.get('Srednia_Cena_Przed', 0):.0f} PLN"
+        )
+    
+    with col4:
+        st.metric(
+            "Średnia Cena Po",
+            f"{summary.get('Srednia_Cena_Po', 0):.0f} PLN",
+            f"Wzrost: {summary.get('Wzrost_PCT', 0):.1f}%"
+        )
+    
+    # Finansowe
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "Przychód PRZED (mc)",
+            f"{summary.get('Przychod_Przed_PLN', 0):,.0f} PLN",
+            f"Rocznie: {summary.get('Roczny_Przed_PLN', 0):,.0f} PLN"
+        )
+    
+    with col2:
+        st.metric(
+            "Przychód PO (mc)",
+            f"{summary.get('Przychod_Po_PLN', 0):,.0f} PLN",
+            f"Rocznie: {summary.get('Roczny_Po_PLN', 0):,.0f} PLN"
+        )
+    
+    with col3:
+        st.metric(
+            "Wzrost (mc)",
+            f"+{summary.get('Wzrost_PLN', 0):,.0f} PLN",
+            f"Roczny impact: +{summary.get('Roczny_Wzrost_PLN', 0):,.0f} PLN"
+        )
+    
+    # Segmentacja wzrostu
+    st.subheader("Segmentacja Klientów po Wzroście")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "Wzrost ≤10% (OK)",
+            summary.get('Wzrost_Do_10_PCT', 0),
+            "Łatwa komunikacja"
+        )
+    
+    with col2:
+        st.metric(
+            "Wzrost 10-20% (ŻÓŁTY)",
+            summary.get('Wzrost_10_20_PCT', 0),
+            "Wymaga dyskusji"
+        )
+    
+    with col3:
+        st.metric(
+            "Wzrost >20% (RYZYKO)",
+            summary.get('Wzrost_Pow_20_PCT', 0),
+            "Priorytet komunikacji!"
+        )
+    
+    # Alerty/Sugestie
+    if alerts:
+        st.subheader("🎯 Sugestie & Alerty")
+        for alert in alerts:
+            st.info(alert)
+    
+    # ====================================================================
     # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
     # ====================================================================
     
@@ -201,6 +300,11 @@ if st.session_state.df is not None:
     st.info("""
     **Cena_Docelowa = NOWY CENNIK z Unit 0** (na podstawie Typ + VAT + Doc_Avg)
     
+    **Grupy klientów:**
+    - **Standard:** cena z Unit 0 cennnika
+    - **VIP:** cena edytowalna (negocjacje)
+    - **FREE:** 0 PLN (gratis dla zaprzyjaźnionych)
+    
     **Porównanie:**
     - **Płacili:** Cena_Stara (lub Cena_Stara × 0.90 jeśli miał rabat)
     - **Będą płacić:** Cena_Docelowa (z Unit 0 cennnika + widełki)
@@ -209,6 +313,7 @@ if st.session_state.df is not None:
     **Przykład:**
     - Bez rabatu, 15 doc → grupa 11-20 → cena z Unit 0 dla 11-20
     - Z rabatem, 50 doc → grupa 21-50 → cena z Unit 0 dla 21-50 (koniec rabatu!)
+    - FREE → 0 PLN (gratis!)
     """)
     
     # Auto-oblicz ceny (na podstawie cennnika z Unit 0)
@@ -228,7 +333,7 @@ if st.session_state.df is not None:
         column_config={
             "👑 Grupa Klienta": st.column_config.SelectboxColumn(
                 "Grupa",
-                options=["Standard", "VIP"],
+                options=["Standard", "VIP", "FREE"],
                 required=True
             ),
             "💰 Nowa Cena": st.column_config.NumberColumn(
