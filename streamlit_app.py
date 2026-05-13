@@ -440,7 +440,7 @@ else:
 # ============================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")"""
+st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")""
 Ceny Dashboard — UNIT 0 + UNIT 1 + UNIT 2
 Unit 0: Zarządzanie cennikiem
 Unit 1: Import danych klientów
