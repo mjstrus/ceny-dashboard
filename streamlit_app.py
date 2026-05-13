@@ -192,6 +192,12 @@ if st.session_state.df is not None:
     st.dataframe(df_display, use_container_width=True, hide_index=True)
     
     # ====================================================================
+    # OBLICZ CENY (dla Unit 3 i Unit 2)
+    # ====================================================================
+    
+    df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+    
+    # ====================================================================
     # UNIT 3: PODSUMOWANIE (SUMMARY DASHBOARD)
     # ====================================================================
     
@@ -315,9 +321,6 @@ if st.session_state.df is not None:
     - Z rabatem, 50 doc → grupa 21-50 → cena z Unit 0 dla 21-50 (koniec rabatu!)
     - FREE → 0 PLN (gratis!)
     """)
-    
-    # Auto-oblicz ceny (na podstawie cennnika z Unit 0)
-    df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
     
     # Przygotuj tabelę do edycji
     df_editable = get_price_table(df_with_prices)
