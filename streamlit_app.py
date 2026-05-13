@@ -265,36 +265,48 @@ if st.session_state.df is not None:
             f"Roczny impact: +{summary.get('Roczny_Wzrost_PLN', 0):,.0f} PLN"
         )
     
-    # Segmentacja wzrostu
-    st.subheader("Segmentacja Klientów po Wzroście")
+    st.subheader("Segmentacja Klientów po Kolorach")
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.metric(
-            "Wzrost ≤10% (OK)",
-            summary.get('Wzrost_Do_10_PCT', 0),
-            "Łatwa komunikacja"
+            "🟢 Zielony (OK)",
+            summary.get('Zielony_Cnt', 0),
+            "Wzrost ≤10%"
         )
     
     with col2:
         st.metric(
-            "Wzrost 10-20% (ŻÓŁTY)",
-            summary.get('Wzrost_10_20_PCT', 0),
-            "Wymaga dyskusji"
+            "🟡 Żółty (Wymaga rozmowy)",
+            summary.get('Zolty_Cnt', 0),
+            "Wzrost 10-20% lub >20% z rabatem"
         )
     
     with col3:
         st.metric(
-            "Wzrost >20% (RYZYKO)",
-            summary.get('Wzrost_Pow_20_PCT', 0),
-            "Priorytet komunikacji!"
+            "🔴 Czerwony (RYZYKO!)",
+            summary.get('Czerwony_Cnt', 0),
+            "Wzrost >20% bez rabatu"
         )
     
     # Alerty/Sugestie
     if alerts:
         st.subheader("🎯 Sugestie & Alerty")
         for alert in alerts:
-            st.info(alert)
+            if alert.startswith("⚠️"):
+                st.warning(alert)
+            elif alert.startswith("💡"):
+                st.info(alert)
+            elif alert.startswith("🎁"):
+                st.success(alert)
+            elif alert.startswith("📈"):
+                st.info(alert)
+            elif alert.startswith("💰"):
+                st.success(alert)
+            elif alert.startswith("👑"):
+                st.info(alert)
+            else:
+                st.write(alert)
     
     # ====================================================================
     # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
