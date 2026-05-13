@@ -58,13 +58,16 @@ def generate_summary(df: pd.DataFrame) -> dict:
     srednia_cena_przed = df['Cena_Faktyczna'].mean() if len(df) > 0 else 0
     srednia_cena_po = df['Cena_Docelowa'].mean() if len(df) > 0 else 0
     
-    # Segmentacja wzrostu (dla Standard + VIP)
-    if not paying_df.empty:
-        wzrost_do_10 = len(paying_df[paying_df['Wzrost_%_Od_Faktycznej'] <= 10])
-        wzrost_10_20 = len(paying_df[(paying_df['Wzrost_%_Od_Faktycznej'] > 10) & (paying_df['Wzrost_%_Od_Faktycznej'] <= 20)])
-        wzrost_pow_20 = len(paying_df[paying_df['Wzrost_%_Od_Faktycznej'] > 20])
+    # Segmentacja po kolorach (Status)
+    if 'Status' in df.columns:
+        zielony = len(df[df['Status'] == 'Zielony'])
+        zolty = len(df[df['Status'] == 'Żółty'])
+        czerwony = len(df[df['Status'] == 'Czerwony'])
     else:
-        wzrost_do_10 = wzrost_10_20 = wzrost_pow_20 = 0
+        # Fallback jeśli brak Status
+        zielony = len(paying_df[paying_df['Wzrost_%_Od_Faktycznej'] <= 10])
+        zolty = len(paying_df[(paying_df['Wzrost_%_Od_Faktycznej'] > 10) & (paying_df['Wzrost_%_Od_Faktycznej'] <= 20)])
+        czerwony = len(paying_df[paying_df['Wzrost_%_Od_Faktycznej'] > 20])
     
     # Rabat (ile miało 10% rabat)
     z_rabatem = len(df[df['Miał_Rabat_10%'] == 1])
@@ -89,9 +92,9 @@ def generate_summary(df: pd.DataFrame) -> dict:
         'Srednia_Cena_Przed': round(srednia_cena_przed, 2),
         'Srednia_Cena_Po': round(srednia_cena_po, 2),
         
-        'Wzrost_Do_10_PCT': wzrost_do_10,
-        'Wzrost_10_20_PCT': wzrost_10_20,
-        'Wzrost_Pow_20_PCT': wzrost_pow_20,
+        'Zielony_Cnt': zielony,
+        'Zolty_Cnt': zolty,
+        'Czerwony_Cnt': czerwony,
         
         'Z_Rabatem': z_rabatem,
         'Bez_Rabatu': bez_rabatu,
@@ -110,8 +113,23 @@ def get_alerts(summary: dict) -> list:
     
     alerts = []
     
-    # Alert: dużo klientów z wzrostem >20%
-    if summary.get('Wzrost_Pow_20_PCT', 0) > 0:
+    # Alert: czerwoni klienci (rzeczywisty wzrost >20%, bez rabatu)
+    if summary.get('Czerwony_Cnt', 0) > 0:
+        pct_red = (summary.get('Czerwony_Cnt', 0) / (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0))) * 100 if (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0)) > 0 else 0
+        alerts.append(f"🔴 {summary.get('Czerwony_Cnt', 0)} klientów ({pct_red:.1f}%) ma wzrost >20% (rzeczywisty wzrost ceny) — RYZYKO!")
+        alerts.append(f"💡 Warto im zaproponować:")
+        alerts.append(f"   • Rabat za dostarczenie dokumentów do 3. dnia miesiąca")
+        alerts.append(f"   • Rabat za płatność faktury w 3 dni")
+        alerts.append(f"   • Wniosek o wakacje składkowe w cenie")
+    
+    # Alert: żółci klienci (wzrost 10-20% LUB >20% ale mieli rabat)
+    if summary.get('Zolty_Cnt', 0) > 0:
+        pct_yellow = (summary.get('Zolty_Cnt', 0) / (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0))) * 100 if (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0)) > 0 else 0
+        alerts.append(f"🟡 {summary.get('Zolty_Cnt', 0)} klientów ({pct_yellow:.1f}%) ma wzrost 10-20% lub >20% ale mieli rabat — wymaga komunikacji")
+        alerts.append(f"💡 Wyjaśnić że wzrost wynika z anulowania rabatu za Saldeo, nie podwyżki ceny")
+    
+    # Zieloni (OK)
+    if summary.get('Zielony_Cnt', 0) > 0:
         pct_red = (summary.get('Wzrost_Pow_20_PCT', 0) / (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0))) * 100 if (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0)) > 0 else 0
         alerts.append(f"⚠️ {summary.get('Wzrost_Pow_20_PCT', 0)} klientów ({pct_red:.1f}%) ma wzrost >20% — priorytet komunikacji")
         alerts.append(f"💡 Warto im zaproponować:")
