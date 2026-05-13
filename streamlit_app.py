@@ -23,8 +23,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("💰 Dashboard Ujednolicenia Cen")
-st.markdown("Abacus Centrum | Unit 0 → 1 → 2")
+st.title("💰 Dashboard Zarządzania Cennikiem")
+st.markdown("Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")
 
 # ============================================================================
 # SESSION STATE
@@ -40,7 +40,7 @@ if 'df' not in st.session_state:
 # UNIT 0: ZARZĄDZANIE CENNIKIEM
 # ============================================================================
 
-st.header("📋 Unit 0: Cennik 2026")
+st.header("📋 Zatwierdzenie cennika")
 
 st.info(get_pricing_summary(st.session_state.pricing_df))
 
@@ -116,7 +116,7 @@ st.divider()
 # UNIT 1: WCZYTANIE DANYCH KLIENTÓW
 # ============================================================================
 
-st.header("📥 Unit 1: Wczytaj Dane Klientów")
+st.header("📥 Wczytywanie danych klientów")
 
 col1, col2 = st.columns([2, 1])
 
@@ -202,7 +202,7 @@ if st.session_state.df is not None:
     # ====================================================================
     
     st.divider()
-    st.header("📊 Unit 3: Podsumowanie Listy")
+    st.header("📊 Statystyka wgranej listy klientów")
     
     from summary_generator import generate_summary, get_alerts
     
@@ -301,25 +301,22 @@ if st.session_state.df is not None:
     # ====================================================================
     
     st.divider()
-    st.header("💵 Unit 2: Edycja Cen Klientów")
+    st.header("💵 Edycja cen klientów")
     
     st.info("""
-    **Cena_Docelowa = NOWY CENNIK z Unit 0** (na podstawie Typ + VAT + Doc_Avg)
+    **Cena_Docelowa = NOWY CENNIK** (ze sekcji "Zatwierdzenie cennika")
+    
+    **Cena_Docelowa liczony na podstawie:** Typ + VAT + Liczba dokumentów
     
     **Grupy klientów:**
-    - **Standard:** cena z Unit 0 cennnika
+    - **Standard:** cena z cennnika
     - **VIP:** cena edytowalna (negocjacje)
     - **FREE:** 0 PLN (gratis dla zaprzyjaźnionych)
     
     **Porównanie:**
-    - **Płacili:** Cena_Stara (lub Cena_Stara × 0.90 jeśli miał rabat)
-    - **Będą płacić:** Cena_Docelowa (z Unit 0 cennnika + widełki)
+    - **Płacili (mc):** Cena_Faktyczna (Cena_Stara lub Cena_Stara × 0.90 jeśli miał rabat)
+    - **Będą płacić (mc):** Cena_Docelowa (z cennnika + widełki)
     - **Wzrost:** różnica (zależy od rabatu + zakresu dokumentów)
-    
-    **Przykład:**
-    - Bez rabatu, 15 doc → grupa 11-20 → cena z Unit 0 dla 11-20
-    - Z rabatem, 50 doc → grupa 21-50 → cena z Unit 0 dla 21-50 (koniec rabatu!)
-    - FREE → 0 PLN (gratis!)
     """)
     
     # Przygotuj tabelę do edycji
@@ -370,4 +367,4 @@ else:
 # ============================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Unit 0→1→2")
+st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")
