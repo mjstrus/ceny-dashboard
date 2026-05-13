@@ -114,6 +114,10 @@ def get_alerts(summary: dict) -> list:
     if summary.get('Wzrost_Pow_20_PCT', 0) > 0:
         pct_red = (summary.get('Wzrost_Pow_20_PCT', 0) / (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0))) * 100 if (summary.get('Liczba_Klientów_Standard', 0) + summary.get('Liczba_Klientów_VIP', 0)) > 0 else 0
         alerts.append(f"⚠️ {summary.get('Wzrost_Pow_20_PCT', 0)} klientów ({pct_red:.1f}%) ma wzrost >20% — priorytet komunikacji")
+        alerts.append(f"💡 Warto im zaproponować:")
+        alerts.append(f"   • Rabat za dostarczenie dokumentów do 3. dnia miesiąca")
+        alerts.append(f"   • Rabat za płatność faktury w 3 dni")
+        alerts.append(f"   • Wniosek o wakacje składkowe w cenie")
     
     # Alert: FREE klienci
     if summary.get('Liczba_Klientów_FREE', 0) > 0:
