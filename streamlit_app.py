@@ -347,11 +347,19 @@ if st.session_state.df is not None:
     
     # Button: Zatwierdź zmiany
     if st.button("✅ Zatwierdź wszystkie zmiany", type="primary"):
+        # Mapping: zmień nazwy emoji na oryginalne
+        column_mapping = {
+            '👑 Grupa Klienta': 'Grupa_Klienta',
+            '💰 Nowa Cena (Unit 0)': 'Cena_Docelowa'
+        }
+        
         # Zaintegruj zmiany z oryginalnym DataFrame
         for idx, row in edited_df.iterrows():
             client_id = row['ID']
+            # Grupa_Klienta
             st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Grupa_Klienta'] = row['👑 Grupa Klienta']
-            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena']
+            # Cena_Docelowa
+            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena (Unit 0)']
         
         st.success("✓ Zmiany zatwierdzone!")
         st.info(f"📊 {len(edited_df)} klientów zaktualizowano")
