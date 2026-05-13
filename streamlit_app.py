@@ -1,7 +1,8 @@
 """
-Ceny Dashboard — EDYTOWALNA TABELA
-Unit 1: Import danych
-Unit 2: Edycja cen (VIP/Standard, Cena_Docelowa)
+Ceny Dashboard — UNIT 0 + UNIT 1 + UNIT 2
+Unit 0: Zarządzanie cennikiem
+Unit 1: Import danych klientów
+Unit 2: Edycja cen
 """
 
 import streamlit as st
@@ -10,6 +11,7 @@ import os
 import pathlib
 from data_loader import load_excel_file, get_display_dataframe
 from calculate_new_prices import calculate_new_prices, get_price_table
+from price_manager import get_default_pricing, apply_global_modification, apply_global_all_modification, get_pricing_summary
 
 # ============================================================================
 # PAGE CONFIG
@@ -22,20 +24,99 @@ st.set_page_config(
 )
 
 st.title("💰 Dashboard Ujednolicenia Cen")
-st.markdown("Abacus Centrum | Edycja cen dla klientów")
+st.markdown("Abacus Centrum | Unit 0 → 1 → 2")
 
 # ============================================================================
 # SESSION STATE
 # ============================================================================
 
+if 'pricing_df' not in st.session_state:
+    st.session_state.pricing_df = get_default_pricing()
+
 if 'df' not in st.session_state:
     st.session_state.df = None
 
 # ============================================================================
-# UNIT 1: WCZYTANIE DANYCH
+# UNIT 0: ZARZĄDZANIE CENNIKIEM
 # ============================================================================
 
-st.header("📥 Krok 1: Wczytaj Dane")
+st.header("📋 Unit 0: Cennik 2026")
+
+st.info(get_pricing_summary(st.session_state.pricing_df))
+
+# Edytowalna tabela cennnika
+st.subheader("Edytuj cennik poniżej")
+
+edited_pricing = st.data_editor(
+    st.session_state.pricing_df,
+    use_container_width=True,
+    hide_index=True,
+    key="pricing_editor",
+    column_config={
+        "Typ": st.column_config.SelectboxColumn(
+            "Typ",
+            options=["KH", "KPIR", "Ryczałt"],
+            required=True
+        ),
+        "VAT": st.column_config.SelectboxColumn(
+            "VAT",
+            options=["tak", "nie"],
+            required=True
+        ),
+        "1-10": st.column_config.NumberColumn("1-10", step=1.0, format="%.2f"),
+        "11-20": st.column_config.NumberColumn("11-20", step=1.0, format="%.2f"),
+        "21-50": st.column_config.NumberColumn("21-50", step=1.0, format="%.2f"),
+        "51-100": st.column_config.NumberColumn("51-100", step=1.0, format="%.2f"),
+        "Paczka 25 (100+)": st.column_config.NumberColumn("Paczka 25", step=1.0, format="%.2f"),
+    }
+)
+
+# Modyfikacje globalne
+st.subheader("⚙️ Modyfikacje Globalne")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("**Zmień całą kategorię**")
+    mod_typ = st.selectbox("Typ", ["KH", "KPIR", "Ryczałt"], key="mod_typ")
+    mod_vat = st.selectbox("VAT", ["tak", "nie"], key="mod_vat")
+    mod_percent = st.number_input("Zmiana %", value=0.0, step=1.0, key="mod_percent")
+    
+    if st.button("✓ Zastosuj dla tej kategorii"):
+        edited_pricing = apply_global_modification(edited_pricing, mod_typ, mod_vat, mod_percent)
+        st.success(f"✓ {mod_typ} {mod_vat}: {mod_percent:+.1f}%")
+
+with col2:
+    st.markdown("**Zmień wszystko**")
+    all_percent = st.number_input("Zmiana % dla WSZYSTKIEGO", value=0.0, step=1.0, key="all_percent")
+    
+    if st.button("✓ Zastosuj dla całego cennnika"):
+        edited_pricing = apply_global_all_modification(edited_pricing, all_percent)
+        st.success(f"✓ Całość: {all_percent:+.1f}%")
+
+with col3:
+    st.markdown("**Reset**")
+    if st.button("🔄 Przywróć domyślny cennik"):
+        edited_pricing = get_default_pricing()
+        st.success("✓ Cennik przywrócony")
+
+# ============================================================================
+# BUTTON: ZATWIERDŹ CENNIK
+# ============================================================================
+
+st.divider()
+
+if st.button("✅ ZATWIERDŹ CENNIK I PRZEJDŹ DO KLIENTÓW", type="primary", use_container_width=True):
+    st.session_state.pricing_df = edited_pricing
+    st.success("✓ Cennik zatwierddzony! Przejdź do Unit 1")
+
+st.divider()
+
+# ============================================================================
+# UNIT 1: WCZYTANIE DANYCH KLIENTÓW
+# ============================================================================
+
+st.header("📥 Unit 1: Wczytaj Dane Klientów")
 
 col1, col2 = st.columns([2, 1])
 
@@ -115,12 +196,11 @@ if st.session_state.df is not None:
     # ====================================================================
     
     st.divider()
-    st.header("💵 Krok 2: Edycja Cen")
+    st.header("💵 Unit 2: Edycja Cen Klientów")
     
     st.info("""
-    **Cena_Docelowa dla WSZYSTKICH: Cennik + 10%** (Cena_Stara × 1.10)
+    **Cena_Docelowa dla WSZYSTKICH: Cennik + (rabat + wzrost)**
     
-    Ale to oznacza RÓŻNE rzeczy:
     - **Bez rabatu:** Płacili 100 → Będą 110 (+10%)
     - **Z rabatem:** Płacili 90 → Będą 110 (+22%, bo likwidacja rabatu + wzrost)
     
@@ -136,7 +216,7 @@ if st.session_state.df is not None:
     df_editable = get_price_table(df_with_prices)
     
     # EDYTOWALNA TABELA
-    st.subheader("Edytuj tabele poniżej")
+    st.subheader("Edytuj tabelę poniżej")
     
     edited_df = st.data_editor(
         df_editable,
@@ -160,7 +240,7 @@ if st.session_state.df is not None:
     
     # Button: Zatwierdź zmiany
     if st.button("✅ Zatwierdź wszystkie zmiany", type="primary"):
-        # Zaitegruj zmiany z oryginalnym DataFrame
+        # Zaintegruj zmiany z oryginalnym DataFrame
         for idx, row in edited_df.iterrows():
             client_id = row['ID']
             st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Grupa_Klienta'] = row['👑 Grupa Klienta']
@@ -170,14 +250,14 @@ if st.session_state.df is not None:
         st.info(f"📊 {len(edited_df)} klientów zaktualizowano")
     
     st.divider()
-    st.success("✓ Gotowe! Możesz teraz wyeksportować raport lub kontynuować edycję.")
+    st.success("✓ Gotowe! Dashboard ready.")
 
 else:
-    st.warning("📥 Wczytaj dane aby kontynuować")
+    st.warning("📥 Wczytaj dane aby kontynuować Unit 2")
 
 # ============================================================================
 # FOOTER
 # ============================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v2.0** | Abacus Centrum | Edytowalna tabela")
+st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Unit 0→1→2")
