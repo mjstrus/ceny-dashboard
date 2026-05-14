@@ -91,7 +91,8 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     df['Doc_Avg'] = df['Doc_Średnia']
     
     # Ustandaryzuj kolumny
-    df['Typ_Pełny'] = df['Typ_Umowy'] + ' ' + df['VAT']
+    vat_str = df['VAT'].map({1: 'tak', 0: 'nie'})
+    df['Typ_Pełny'] = df['Typ_Umowy'] + ' ' + vat_str
     
     return df, []
 
