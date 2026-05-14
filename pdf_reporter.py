@@ -179,9 +179,8 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     if len(df) > 0:
         # Mapowanie: CSV -> DF columns
         col_mapping = {
-            'ID': 'ID',
-            'Nazwa': 'Klient',
-            'Typ': 'Typ_Klienta',
+            'Nazwa': 'Nazwa',
+            'Typ': 'Typ_Umowy',
             'Status': 'Status',
             'Widełka': 'Widełka',
             'Cennik (bez rabatu)': 'Cena_Faktyczna',
@@ -221,10 +220,17 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
                     row_data.append(text.strip())
             clients_data.append(row_data)
         
-        # Tabela - dostosuj szerokość do liczby kolumn
-        num_cols = len(csv_headers)
-        col_width = 9.5 / num_cols  # Landscape A4 ~ 11", minus marginesy
-        clients_table = Table(clients_data, colWidths=[col_width*inch for _ in range(num_cols)])
+        # Oblicz szerokości kolumn na podstawie zawartości
+        col_widths = []
+        for i, col_header in enumerate(csv_headers):
+            max_len = len(col_header)
+            for row in clients_data[1:]:  # Pomiń nagłówek
+                max_len = max(max_len, len(str(row[i])))
+            # Mapuj długość na szerokość (empirycznie)
+            width = max(0.4, min(2.0, max_len * 0.08))  # 0.4-2 cale
+            col_widths.append(width * inch)
+        
+        clients_table = Table(clients_data, colWidths=col_widths)
         clients_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
