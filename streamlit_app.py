@@ -268,7 +268,7 @@ if st.session_state.df is not None:
         )
     
     st.subheader("Segmentacja Klientów po Kolorach")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric(
@@ -279,15 +279,22 @@ if st.session_state.df is not None:
     
     with col2:
         st.metric(
-            "🟡 Żółty (Wymaga rozmowy)",
+            "🟡 Żółty",
             summary.get('Zolty_Cnt', 0),
-            "Wzrost 10-20% lub >20% z rabatem"
+            "Wzrost 10-20%"
         )
     
     with col3:
         st.metric(
-            "🔴 Czerwony (RYZYKO!)",
+            "🔴 Czerwony (z rabatem)",
             summary.get('Czerwony_Cnt', 0),
+            "Wzrost >20% ale mieli rabat"
+        )
+    
+    with col4:
+        st.metric(
+            "⚫ Czarny (RYZYKO!)",
+            summary.get('Czarny_Cnt', 0),
             "Wzrost >20% bez rabatu"
         )
     
@@ -300,9 +307,9 @@ if st.session_state.df is not None:
     with col1:
         import plotly.graph_objects as go
         
-        segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0)]
-        labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony']
-        colors_chart = ['#22c55e', '#eab308', '#ef4444']
+        segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0), summary.get('Czarny_Cnt', 0)]
+        labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony', '⚫ Czarny']
+        colors_chart = ['#22c55e', '#eab308', '#f97316', '#1f2937']  # Green, Amber, Orange, Black
         
         fig_seg = go.Figure(data=[go.Pie(labels=labels, values=segments, marker=dict(colors=colors_chart))])
         fig_seg.update_layout(title="Segmentacja Klientów", height=400)
@@ -316,6 +323,20 @@ if st.session_state.df is not None:
         ])
         fig_rev.update_layout(title="Przychód PRZED vs PO", barmode='group', height=400, yaxis_title="PLN")
         st.plotly_chart(fig_rev, use_container_width=True)
+    
+    # Wykres 3: CZARNY vs CZERWONY — porównanie ryzyka
+    if summary.get('Czarny_Cnt', 0) > 0 or summary.get('Czerwony_Cnt', 0) > 0:
+        st.subheader("⚫🔴 Porównanie: CZARNY (Ryzyko) vs CZERWONY (Uzasadnione)")
+        col_risk = st.columns(1)[0]
+        with col_risk:
+            risk_labels = [f"⚫ Czarny\n(RYZYKO)\n({summary.get('Czarny_Cnt', 0)})", 
+                          f"🔴 Czerwony\n(z rabatem)\n({summary.get('Czerwony_Cnt', 0)})"]
+            risk_values = [summary.get('Czarny_Cnt', 0), summary.get('Czerwony_Cnt', 0)]
+            risk_colors = ['#1f2937', '#f97316']  # Black, Orange
+            
+            fig_risk = go.Figure(data=[go.Pie(labels=risk_labels, values=risk_values, marker=dict(colors=risk_colors))])
+            fig_risk.update_layout(title="Rozkład: Rzeczywiste Ryzyko vs Uzasadnione Wzrosty", height=400)
+            st.plotly_chart(fig_risk, use_container_width=True)
     
     # EKSPORT PDF
     st.subheader("📥 Eksport Raportu")
