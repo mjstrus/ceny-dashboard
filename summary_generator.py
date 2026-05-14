@@ -58,6 +58,9 @@ def generate_summary(df: pd.DataFrame) -> dict:
     srednia_cena_przed = df['Cena_Faktyczna'].mean() if len(df) > 0 else 0
     srednia_cena_po = df['Cena_Docelowa'].mean() if len(df) > 0 else 0
     
+    # Łączna ilość dokumentów
+    total_docs = df['Doc_Avg'].sum()
+    
     # Segmentacja po kolorach (Status)
     if 'Status' in df.columns:
         zielony = len(df[df['Status'] == 'Zielony'])
@@ -99,6 +102,8 @@ def generate_summary(df: pd.DataFrame) -> dict:
         'Srednia_Doc_Klienta': round(srednia_doc, 1),
         'Srednia_Cena_Przed': round(srednia_cena_przed, 2),
         'Srednia_Cena_Po': round(srednia_cena_po, 2),
+        
+        'Total_Dokumentow': round(total_docs, 0),
         
         'Zielony_Cnt': zielony,
         'Zolty_Cnt': zolty,
