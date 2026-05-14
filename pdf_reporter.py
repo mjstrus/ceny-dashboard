@@ -227,8 +227,8 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             max_len = len(col_header)
             for row in clients_data[1:]:  # Pomiń nagłówek
                 max_len = max(max_len, len(str(row[i])))
-            # Mapuj długość na szerokość (empirycznie)
-            width = max(0.4, min(2.0, max_len * 0.08))  # 0.4-2 cale
+            # Mapuj długość na szerokość (zmniejszone)
+            width = max(0.3, min(1.2, max_len * 0.06))  # 0.3-1.2 cale
             col_widths.append(width * inch)
         
         clients_table = Table(clients_data, colWidths=col_widths)
