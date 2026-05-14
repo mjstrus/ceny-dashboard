@@ -168,6 +168,93 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     story.append(seg_table)
     story.append(Spacer(1, 0.3*inch))
     
+    # ============================================================================
+    # LISTA FIRM
+    # ============================================================================
+    story.append(PageBreak())
+    story.append(Paragraph("Lista firm - Edytuj tabele ponizej", heading_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Przygotuj tabelę klientów
+    if len(df) > 0:
+        # Kolumny do wyświetlenia
+        display_cols = ['Status', 'Klient', 'Widełka', 'Cena_Docelowa', 'Wzrost_%_Od_Faktycznej', 
+                       'Grupa_Klienta', 'Sugerowany_Rabat']
+        available_cols = [col for col in display_cols if col in df.columns]
+        
+        # Nagłówki
+        clients_data = [available_cols]
+        
+        # Dane
+        for idx, row in df.iterrows():
+            row_data = []
+            for col in available_cols:
+                val = row[col]
+                if isinstance(val, float):
+                    row_data.append(f"{val:.0f}" if col != 'Wzrost_%_Od_Faktycznej' else f"{val:.1f}%")
+                else:
+                    row_data.append(str(val))
+            clients_data.append(row_data)
+        
+        # Tabela
+        clients_table = Table(clients_data, colWidths=[0.8*inch, 1.2*inch, 0.7*inch, 0.9*inch, 1.0*inch, 1.0*inch, 0.8*inch])
+        clients_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ]))
+        story.append(clients_table)
+    
+    story.append(Spacer(1, 0.3*inch))
+    
+    # ============================================================================
+    # SUGESTIE I ALERTY
+    # ============================================================================
+    story.append(PageBreak())
+    story.append(Paragraph("Sugestie i Alerty", heading_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Zielony
+    zielony = df[df['Status'] == 'Zielony']
+    if len(zielony) > 0:
+        story.append(Paragraph("Zielony - Wzrost do 10% (OK)", styles['Normal']))
+        story.append(Paragraph(f"Liczba klientow: {len(zielony)}", styles['Normal']))
+        story.append(Spacer(1, 0.1*inch))
+    
+    # Zółty
+    zolty = df[df['Status'] == 'Zolty']
+    if len(zolty) > 0:
+        story.append(Paragraph("Zolty - Wzrost 10-20% lub >20% z rabatem", styles['Normal']))
+        story.append(Paragraph(f"Liczba klientow: {len(zolty)}", styles['Normal']))
+        story.append(Paragraph("AKCJA: Wymaga rozmowy z klientem", styles['Normal']))
+        story.append(Spacer(1, 0.1*inch))
+    
+    # Czerwony
+    czerwony = df[df['Status'] == 'Czerwony']
+    if len(czerwony) > 0:
+        story.append(Paragraph("Czerwony - Wzrost >20% z rabatem", styles['Normal']))
+        story.append(Paragraph(f"Liczba klientow: {len(czerwony)}", styles['Normal']))
+        story.append(Paragraph("AKCJA: Wyjasnij anulowanie rabatu za Saldeo (10 PLN)", styles['Normal']))
+        story.append(Spacer(1, 0.1*inch))
+    
+    # Czarny (RYZYKO!)
+    czarny = df[df['Status'] == 'Czarny']
+    if len(czarny) > 0:
+        story.append(Paragraph("Czarny - RYZYKO! Wzrost >20% bez rabatu", styles['Normal']))
+        story.append(Paragraph(f"Liczba klientow: {len(czarny)}", styles['Normal']))
+        story.append(Paragraph("AKCJA PRIORYTET: Zaproponuj rabat 20 PLN:", styles['Normal']))
+        story.append(Paragraph("  - 10 PLN za dokumenty do 3. dnia miesiaca (kompletne)", styles['Normal']))
+        story.append(Paragraph("  - 10 PLN za platnosc faktury w 3 dni", styles['Normal']))
+        story.append(Paragraph("  - Wniosek o wakacje skladkowe (gratis)", styles['Normal']))
+        story.append(Spacer(1, 0.1*inch))
+    
+    story.append(Spacer(1, 0.3*inch))
+    
     # STOPKA
     story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph("___________________________________________________________", styles['Normal']))
