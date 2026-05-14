@@ -24,7 +24,7 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     try:
         df = pd.read_excel(file_path, sheet_name='Clients')
     except Exception as e:
-        return None, [f"❌ Błąd wczytania Excel: {str(e)}"]
+        return None, [f"[ERROR] Błąd wczytania Excel: {str(e)}"]
     
     # Walidacja struktury
     errors = []
@@ -36,7 +36,7 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     
     missing = required_columns - set(df.columns)
     if missing:
-        errors.append(f"❌ Brakujące kolumny: {', '.join(missing)}")
+        errors.append(f"[ERROR] Brakujące kolumny: {', '.join(missing)}")
         return None, errors
     
     # DATA CLEANING
@@ -106,24 +106,24 @@ def validate_data(df: pd.DataFrame) -> list:
     # Sprawdź duplikaty ID
     if df['ID'].duplicated().any():
         dup_ids = df[df['ID'].duplicated()]['ID'].unique()
-        errors.append(f"⚠️  Duplikaty ID: {list(dup_ids)}")
+        errors.append(f"[WARN]  Duplikaty ID: {list(dup_ids)}")
     
     # Sprawdź puste ID
     if df['ID'].isna().any():
-        errors.append("❌ Brakuje ID dla niektórych klientów")
+        errors.append("[ERROR] Brakuje ID dla niektórych klientów")
     
     # Sprawdź typ umowy
     valid_types = {'Kh', 'KPIR', 'Ryczałt'}
     invalid = df[~df['Typ_Umowy'].isin(valid_types)]
     if not invalid.empty:
-        errors.append(f"❌ Niepoprawny typ umowy: {invalid['Typ_Umowy'].unique()}")
+        errors.append(f"[ERROR] Niepoprawny typ umowy: {invalid['Typ_Umowy'].unique()}")
     
     # Sprawdź ceny > 0 - jeśli brakuje, wstaw 250 (domyślna)
     if 'Cena_Stara' in df.columns:
         missing_prices = df[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna())]
         if not missing_prices.empty:
             missing_ids = list(missing_prices['ID'].values)
-            errors.append(f"⚠️  Brakuje ceny dla ID: {missing_ids} - wstawiam domyślną 250 PLN")
+            errors.append(f"[WARN]  Brakuje ceny dla ID: {missing_ids} - wstawiam domyślną 250 PLN")
             # Wstaw domyślną cenę
             df.loc[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna()), 'Cena_Stara'] = 250
     
@@ -132,7 +132,7 @@ def validate_data(df: pd.DataFrame) -> list:
         if col in df.columns:
             na_count = df[col].isna().sum()
             if na_count > 0:
-                errors.append(f"⚠️  {na_count} brakuje wartości w {col} (OK dla nowych klientów)")
+                errors.append(f"[WARN]  {na_count} brakuje wartości w {col} (OK dla nowych klientów)")
     
     return errors, df
 
@@ -150,6 +150,6 @@ def get_display_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df_display.columns = ['ID', 'Nazwa', 'Typ Umowy', 'Cena Stara', 'Śr. Dokumentów/mc', 'Ma Rabat']
     
     # Format: Miał_Rabat_10% -> Tak/Nie
-    df_display['Ma Rabat'] = df_display['Ma Rabat'].map({1: '✓ Tak', 0: '✗ Nie'})
+    df_display['Ma Rabat'] = df_display['Ma Rabat'].map({1: 'OK Tak', 0: '✗ Nie'})
     
     return df_display
