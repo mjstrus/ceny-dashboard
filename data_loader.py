@@ -118,11 +118,14 @@ def validate_data(df: pd.DataFrame) -> list:
     if not invalid.empty:
         errors.append(f"❌ Niepoprawny typ umowy: {invalid['Typ_Umowy'].unique()}")
     
-    # Sprawdź ceny > 0
+    # Sprawdź ceny > 0 - jeśli brakuje, wstaw 250 (domyślna)
     if 'Cena_Stara' in df.columns:
-        invalid_prices = df[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna())]
-        if not invalid_prices.empty:
-            errors.append(f"❌ Cena <= 0 lub brakuje dla ID: {list(invalid_prices['ID'].values)}")
+        missing_prices = df[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna())]
+        if not missing_prices.empty:
+            missing_ids = list(missing_prices['ID'].values)
+            errors.append(f"⚠️  Brakuje ceny dla ID: {missing_ids} - wstawiam domyślną 250 PLN")
+            # Wstaw domyślną cenę
+            df.loc[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna()), 'Cena_Stara'] = 250
     
     # Sprawdź ilości dokumentów (mogą być NaN dla nowych klientów, to OK)
     for col in ['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń']:
