@@ -77,10 +77,12 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     if validation_errors:
         errors.extend(validation_errors)
     
-    if errors:
+    # Jeśli tylko warnings - dalej wczytaj dane
+    critical_errors = [e for e in errors if e.startswith('[ERROR]')]
+    if critical_errors:
         return None, errors
     
-    
+    # Jeśli brak błędów krytycznych - zwróć df i warnings
     # Jeśli nie ma Doc_Średnia, oblicz ją
     if 'Doc_Średnia' not in df.columns:
         df['Doc_Średnia'] = df[['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń']].mean(axis=1).round(1)
