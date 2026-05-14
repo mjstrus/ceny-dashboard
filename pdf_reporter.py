@@ -74,17 +74,17 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     story.append(Paragraph("Metryki Glowne", heading_style))
     
     metrics_data = [
-        ['Liczba klientów', f"{summary.get('Liczba_Klientów_Razem', 0)}"],
+        ['Liczba klientow', f"{summary.get('Liczba_Klientów_Razem', 0)}"],
         ['  - Standard', f"{summary.get('Liczba_Klientów_Standard', 0)}"],
         ['  - VIP', f"{summary.get('Liczba_Klientów_VIP', 0)}"],
         ['  - FREE', f"{summary.get('Liczba_Klientów_FREE', 0)}"],
         ['', ''],
-        ['Przychód PRZED (mc)', f"{summary.get('Przychod_Przed_PLN', 0):,.0f} PLN"],
-        ['Przychód PO (mc)', f"{summary.get('Przychod_Po_PLN', 0):,.0f} PLN"],
+        ['Przychod PRZED (mc)', f"{summary.get('Przychod_Przed_PLN', 0):,.0f} PLN"],
+        ['Przychod PO (mc)', f"{summary.get('Przychod_Po_PLN', 0):,.0f} PLN"],
         ['Wzrost (mc)', f"+{summary.get('Wzrost_PLN', 0):,.0f} PLN ({summary.get('Wzrost_PCT', 0):.1f}%)"],
         ['', ''],
         ['Roczny impact', f"+{summary.get('Roczny_Wzrost_PLN', 0):,.0f} PLN"],
-        ['Średnia docs/klienta', f"{summary.get('Srednia_Doc_Klienta', 0):.1f}"],
+        ['Srednia docs/klienta', f"{summary.get('Srednia_Doc_Klienta', 0):.1f}"],
     ]
     
     metrics_table = Table(metrics_data, colWidths=[3*inch, 2*inch])
@@ -108,12 +108,12 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     # Wykres 1: Segmentacja (Pie)
     fig, ax = plt.subplots(figsize=(5, 3), dpi=100)
     segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0), summary.get('Czarny_Cnt', 0)]
-    labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony', '⚫ Czarny']
+    labels = ['Zielony', 'Zolty', 'Czerwony', 'Czarny']
     colors_pie = ['#22c55e', '#eab308', '#f97316', '#1f2937']
     
     if sum(segments) > 0:
         ax.pie(segments, labels=labels, autopct='%1.1f%%', colors=colors_pie, startangle=90)
-        ax.set_title('Segmentacja Klientów', fontsize=12, fontweight='bold', color=NAVY)
+        ax.set_title('Segmentacja klientow', fontsize=12, fontweight='bold', color=NAVY)
     
     img_seg = BytesIO()
     fig.savefig(img_seg, format='png', bbox_inches='tight', dpi=100)
@@ -128,7 +128,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     values = [summary.get('Przychod_Przed_PLN', 0), summary.get('Przychod_Po_PLN', 0)]
     bars = ax.bar(months, values, color=[NAVY, GOLD])
     ax.set_ylabel('PLN', fontweight='bold')
-    ax.set_title('Przychód Miesięczny', fontsize=12, fontweight='bold', color=NAVY)
+    ax.set_title('Przychod Miesieczny', fontsize=12, fontweight='bold', color=NAVY)
     
     # Dodaj wartości na słupkach
     for bar in bars:
@@ -149,9 +149,9 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     seg_data = [
         ['Status', 'Liczba', 'Opis'],
-        ['🟢 Zielony', str(summary.get('Zielony_Cnt', 0)), 'Wzrost ≤10% (OK)'],
-        ['🟡 Żółty', str(summary.get('Zolty_Cnt', 0)), 'Wzrost 10-20% lub >20% z rabatem'],
-        ['🔴 Czerwony', str(summary.get('Czerwony_Cnt', 0)), 'Wzrost >20% bez rabatu (RYZYKO)'],
+        ['Zielony', str(summary.get('Zielony_Cnt', 0)), 'Wzrost <=10% (OK)'],
+        ['Zolty', str(summary.get('Zolty_Cnt', 0)), 'Wzrost 10-20% lub >20% z rabatem'],
+        ['Czerwony', str(summary.get('Czerwony_Cnt', 0)), 'Wzrost >20% bez rabatu (RYZYKO)'],
     ]
     
     seg_table = Table(seg_data, colWidths=[1.2*inch, 1*inch, 3*inch])
