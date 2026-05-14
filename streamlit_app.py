@@ -189,7 +189,11 @@ if st.session_state.df is not None:
     # OBLICZ CENY (dla Unit 3 i Unit 2)
     # ====================================================================
     
-    df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+    # Jeśli były edycje w Unit 2 - użyj przeliczeń z session_state
+    if 'df_with_prices' in st.session_state and st.session_state.df_with_prices is not None:
+        df_with_prices = st.session_state.df_with_prices
+    else:
+        df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
     
     # ====================================================================
     # UNIT 3: PODSUMOWANIE (SUMMARY DASHBOARD)
@@ -202,8 +206,11 @@ if st.session_state.df is not None:
     import plotly.graph_objects as go
     import plotly.express as px
     
-    # Oblicz summary
-    summary = generate_summary(df_with_prices)
+    # Oblicz summary (lub użyj przelichonego z Unit 2)
+    if 'summary' in st.session_state and st.session_state.summary is not None:
+        summary = st.session_state.summary
+    else:
+        summary = generate_summary(df_with_prices)
     alerts = get_alerts(summary)
     
     # Karty metryczne
@@ -436,11 +443,11 @@ if st.session_state.df is not None:
     )
     
     # Button: Zatwierdź zmiany
-    if st.button("✅ Zatwierdź wszystkie zmiany", type="primary"):
+    if st.button("OK Zatwierdz wszystkie zmiany", type="primary"):
         # Mapping: zmień nazwy emoji na oryginalne
         column_mapping = {
             '👑 Grupa Klienta': 'Grupa_Klienta',
-            '💰 Nowa Cena (Unit 0)': 'Cena_Docelowa'
+            '💰 Nowa Cena': 'Cena_Docelowa'
         }
         
         # Zaintegruj zmiany z oryginalnym DataFrame
@@ -451,8 +458,21 @@ if st.session_state.df is not None:
             # Cena_Docelowa
             st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena']
         
-        st.success("OK Zmiany zatwierdzone!")
-        st.info(f"📊 {len(edited_df)} klientów zaktualizowano")
+        # PRZEOBLICZYĆ statystyki i raport z nowymi cenami!
+        from calculate_new_prices import calculate_new_prices
+        from summary_generator import generate_summary
+        
+        st.session_state.df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+        st.session_state.summary = generate_summary(st.session_state.df_with_prices)
+        
+        st.success("OK Zmiany zatwierdzone! Statystyki przeobliczone.")
+        st.info(f"OK {len(edited_df)} klientow zaktualizowano")
+        
+        # Odśwież stronę aby pokazać nowe statystyki
+        try:
+            st.rerun()
+        except:
+            st.warning("Odśwież stronę F5 aby zobaczyć zmienione statystyki w Unit 3")
     
     st.divider()
     st.success("OK Gotowe! Dashboard ready.")
