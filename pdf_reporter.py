@@ -101,9 +101,9 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Wykres 1: Segmentacja (Pie)
     fig, ax = plt.subplots(figsize=(5, 3), dpi=100)
-    segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0)]
-    labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony']
-    colors_pie = ['#22c55e', '#eab308', '#ef4444']
+    segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0), summary.get('Czarny_Cnt', 0)]
+    labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony', '⚫ Czarny']
+    colors_pie = ['#22c55e', '#eab308', '#f97316', '#1f2937']
     
     if sum(segments) > 0:
         ax.pie(segments, labels=labels, autopct='%1.1f%%', colors=colors_pie, startangle=90)
@@ -120,7 +120,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     fig, ax = plt.subplots(figsize=(5, 3), dpi=100)
     months = ['PRZED', 'PO']
     values = [summary.get('Przychod_Przed_PLN', 0), summary.get('Przychod_Po_PLN', 0)]
-    bars = ax.bar(months, values, color=[colors.HexColor(NAVY), colors.HexColor(GOLD)])
+    bars = ax.bar(months, values, color=[NAVY, GOLD])
     ax.set_ylabel('PLN', fontweight='bold')
     ax.set_title('Przychód Miesięczny', fontsize=12, fontweight='bold', color=NAVY)
     
