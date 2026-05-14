@@ -14,6 +14,7 @@ from reportlab.lib.units import inch
 from io import BytesIO
 from datetime import datetime
 import os
+from unidecode import unidecode
 
 # Kolory Abacus
 NAVY = '#1B2A4A'
@@ -198,8 +199,8 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         csv_headers = [k for k, v in col_mapping.items() if v in df.columns]
         df_cols = [col_mapping[k] for k in csv_headers]
         
-        # Nagłówki (bez emoji)
-        clients_data = [csv_headers]
+        # Nagłówki (bez emoji, zamieniaj polskie znaki)
+        clients_data = [[unidecode(h) for h in csv_headers]]
         
         # Dane
         for idx, row in df.iterrows():
@@ -217,7 +218,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
                     row_data.append(str(int(val)))
                 else:
                     text = str(val).replace('🟢', '').replace('🟡', '').replace('🔴', '').replace('⚫', '')
-                    row_data.append(text.strip())
+                    row_data.append(unidecode(text.strip()))
             clients_data.append(row_data)
         
         # Oblicz szerokości kolumn na podstawie zawartości
