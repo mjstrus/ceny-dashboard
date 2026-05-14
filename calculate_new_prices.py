@@ -148,7 +148,7 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     df['Wzrost_%_Od_Faktycznej'] = df.apply(calculate_wzrost, axis=1)
     df['Wzrost_%_Bez_Rabatu'] = df.apply(calculate_wzrost_bez_rabatu, axis=1)
     
-    # STATUS SEGMENTACJI (Zielony/Żółty/Czerwony)
+    # STATUS SEGMENTACJI (Zielony/Żółty/Czerwony/Czarny)
     def assign_status(row):
         wzrost_pct = row['Wzrost_%_Od_Faktycznej']
         miał_rabat = row['Miał_Rabat_10%']
@@ -158,9 +158,9 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
         elif wzrost_pct <= 20:
             return 'Żółty'
         elif wzrost_pct > 20 and miał_rabat == 1:
-            return 'Żółty'  # Miał rabat — wzrost to anulowanie rabatu
+            return 'Czerwony'  # Miał rabat — wzrost to anulowanie rabatu (łatwo wyjaśnić)
         else:
-            return 'Czerwony'  # Rzeczywisty wzrost ceny
+            return 'Czarny'  # Rzeczywisty wzrost ceny BEZ rabatu = RYZYKO!
     
     df['Status'] = df.apply(assign_status, axis=1)
     
@@ -172,8 +172,13 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
     Przygotuj tabelę do edycji w Unit 2 (st.data_editor).
     """
     
+    # Dodaj kolumnę "Sugerowany rabat" — 20 PLN dla CZARNYCH (ryzyko)
+    df['Sugerowany_Rabat'] = df['Status'].apply(
+        lambda x: 20.0 if x == 'Czarny' else 0.0
+    )
+    
     display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Status', 'Cena_Range', 'Cena_Stara', 'Miał_Rabat_10%', 
-                    'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 
+                    'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 'Sugerowany_Rabat',
                     'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Wzrost_%_Bez_Rabatu']
     
     # Sprawdź czy wszystkie kolumny istnieją
@@ -188,11 +193,12 @@ def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: '🟢 Zielony' if x == 'Zielony' 
                   else '🟡 Żółty' if x == 'Żółty'
                   else '🔴 Czerwony' if x == 'Czerwony'
+                  else '⚫ Czarny' if x == 'Czarny'
                   else '❓ Nieznany'
     )
     
     df_display.columns = ['ID', 'Nazwa', 'Typ', '📊 Status', 'Widełka', 'Cennik (bez rabatu)', 'Miał rabat?', 
-                          'Płacili (mc)', '👑 Grupa Klienta', '💰 Nowa Cena', 
+                          'Płacili (mc)', '👑 Grupa Klienta', '💰 Nowa Cena', '💳 Sugerowany rabat (PLN)',
                           'Wzrost PLN', 'Wzrost % (z rabatem)', 'Wzrost % (gdyby brak rabatu)']
     
     # Format
