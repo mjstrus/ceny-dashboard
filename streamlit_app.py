@@ -223,6 +223,16 @@ if st.session_state.df is not None:
             f"Wzrost: {summary.get('Wzrost_PCT', 0):.1f}%"
         )
     
+    # Dokumenty
+    st.subheader("📄 Dokumenty")
+    col_docs = st.columns(1)[0]
+    with col_docs:
+        st.metric(
+            "Łączna Ilość Dokumentów (wszystkich klientów)",
+            f"{summary.get('Total_Dokumentow', 0):.0f}",
+            f"Średnia: {summary.get('Srednia_Doc_Klienta', 0):.1f} doc/klient"
+        )
+    
     # Finansowe
     col1, col2, col3 = st.columns(3)
     
