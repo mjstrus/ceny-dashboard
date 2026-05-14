@@ -249,7 +249,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             width = max(0.4, min(1.0, max_len * 0.05))  # 0.4-1.0 cale
             col_widths.append(width * inch)
         
-        clients_table = Table(clients_data, colWidths=col_widths, splitByHyphen=True)
+        clients_table = Table(clients_data, colWidths=col_widths)
         clients_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
