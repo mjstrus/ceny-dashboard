@@ -54,9 +54,9 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     }
     df['Typ_Umowy'] = df['Typ_Umowy'].map(typ_map).fillna(df['Typ_Umowy'])
     
-    # Oczyść VAT (trim) i konwertuj na boolean
+    # Oczyść VAT (trim) i konwertuj na "tak"/"nie"
     df['VAT'] = df['VAT'].astype(str).str.strip().str.lower()
-    df['VAT'] = df['VAT'].isin(['tak', 'true', '1', 'yes']).astype(int)
+    df['VAT'] = df['VAT'].map(lambda x: 'tak' if x in ['tak', 'true', '1', 'yes'] else 'nie')
     
     # Konwertuj Cena_Stara na numeric PRZED walidacją
     if 'Cena_Stara' in df.columns:
@@ -91,8 +91,7 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     df['Doc_Avg'] = df['Doc_Średnia']
     
     # Ustandaryzuj kolumny
-    vat_str = df['VAT'].map({1: 'tak', 0: 'nie'})
-    df['Typ_Pełny'] = df['Typ_Umowy'] + ' ' + vat_str
+    df['Typ_Pełny'] = df['Typ_Umowy'] + ' ' + df['VAT']
     
     return df, []
 
