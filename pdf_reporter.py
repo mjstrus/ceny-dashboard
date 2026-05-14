@@ -177,41 +177,62 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Przygotuj tabelę klientów
     if len(df) > 0:
-        # Kolumny do wyświetlenia - WSZYSTKIE (poza technicznymi)
-        exclude_cols = []  # Jeśli chcesz coś usunąć
-        available_cols = [col for col in df.columns if col not in exclude_cols]
+        # Mapowanie: CSV -> DF columns
+        col_mapping = {
+            'ID': 'ID',
+            'Nazwa': 'Klient',
+            'Typ': 'Typ_Klienta',
+            'Status': 'Status',
+            'Widełka': 'Widełka',
+            'Cennik (bez rabatu)': 'Cena_Faktyczna',
+            'Miał rabat?': 'Miał_Rabat_10%',
+            'Płacili (mc)': 'Cena_Faktyczna',
+            'Grupa Klienta': 'Grupa_Klienta',
+            'Nowa Cena': 'Cena_Docelowa',
+            'Sugerowany rabat (PLN)': 'Sugerowany_Rabat',
+            'Wzrost PLN': 'Wzrost_PLN',
+            'Wzrost % (z rabatem)': 'Wzrost_%_Od_Faktycznej',
+            'Wzrost % (gdyby brak rabatu)': 'Wzrost_%_Bez_Rabatu'
+        }
         
-        # Nagłówki
-        clients_data = [available_cols]
+        # Weź tylko kolumny które istnieją w df
+        csv_headers = [k for k, v in col_mapping.items() if v in df.columns]
+        df_cols = [col_mapping[k] for k in csv_headers]
+        
+        # Nagłówki (bez emoji)
+        clients_data = [csv_headers]
         
         # Dane
         for idx, row in df.iterrows():
             row_data = []
-            for col in available_cols:
-                val = row[col]
+            for df_col in df_cols:
+                val = row[df_col]
                 if isinstance(val, float):
-                    # Formatowanie liczb
-                    if '%' in col:
+                    if 'Wzrost_%' in df_col:
                         row_data.append(f"{val:.1f}%")
-                    elif 'PLN' in col or 'Cena' in col or 'Rabat' in col:
+                    elif 'PLN' in df_col or 'Cena' in df_col or 'Rabat' in df_col:
                         row_data.append(f"{val:.0f}")
                     else:
                         row_data.append(f"{val:.1f}")
+                elif isinstance(val, int):
+                    row_data.append(str(int(val)))
                 else:
-                    row_data.append(str(val))
+                    text = str(val).replace('🟢', '').replace('🟡', '').replace('🔴', '').replace('⚫', '')
+                    row_data.append(text.strip())
             clients_data.append(row_data)
         
         # Tabela - dostosuj szerokość do liczby kolumn
-        num_cols = len(available_cols)
-        col_width = 6.0 / num_cols  # Razem ~6 cali szerokości
+        num_cols = len(csv_headers)
+        col_width = 9.5 / num_cols  # Landscape A4 ~ 11", minus marginesy
         clients_table = Table(clients_data, colWidths=[col_width*inch for _ in range(num_cols)])
         clients_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 6),
-            ('FONTSIZE', (0, 1), (-1, -1), 5),
+            ('FONTSIZE', (0, 0), (-1, 0), 5),
+            ('FONTSIZE', (0, 1), (-1, -1), 4),
+            ('ROWHEIGHT', (0, 0), (-1, -1), 0.2*inch),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
