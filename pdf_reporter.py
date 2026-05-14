@@ -199,8 +199,26 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         csv_headers = [k for k, v in col_mapping.items() if v in df.columns]
         df_cols = [col_mapping[k] for k in csv_headers]
         
-        # Nagłówki (bez emoji, zamieniaj polskie znaki)
-        clients_data = [[unidecode(h) for h in csv_headers]]
+        # Podziel długie nazwy na wiersze
+        multiline_headers = [
+            'Nazwa',
+            'Typ',
+            'Status',
+            'Widełka',
+            'Cennik\n(bez rabatu)',
+            'Miał\nrabat?',
+            'Płacili\n(mc)',
+            'Grupa\nKlienta',
+            'Nowa\nCena',
+            'Sugerowany\nrabat\n(PLN)',
+            'Wzrost\nPLN',
+            'Wzrost %\n(z rabatem)',
+            'Wzrost %\n(gdyby\nbrak rabatu)'
+        ]
+        multiline_headers = multiline_headers[:len(csv_headers)]
+        
+        # Nagłówki (wieloliniowe)
+        clients_data = [[unidecode(h) for h in multiline_headers]]
         
         # Dane
         for idx, row in df.iterrows():
@@ -221,31 +239,30 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
                     row_data.append(unidecode(text.strip()))
             clients_data.append(row_data)
         
-        # Oblicz szerokości kolumn - WĘŻSZE bo nagłówki na 2 linie
+        # Oblicz szerokości kolumn - ŚREDNIE (bo nagłówki wieloliniowe)
         col_widths = []
         for i, col_header in enumerate(csv_headers):
             max_len = len(col_header)
             for row in clients_data[1:]:  # Pomiń nagłówek
                 max_len = max(max_len, len(str(row[i])))
-            # Mapuj długość na szerokość - WĘŻSZE
-            width = max(0.25, min(0.85, max_len * 0.04))  # 0.25-0.85 cale
+            # Mapuj długość na szerokość - ŚREDNIE
+            width = max(0.4, min(1.0, max_len * 0.05))  # 0.4-1.0 cale
             col_widths.append(width * inch)
         
-        clients_table = Table(clients_data, colWidths=col_widths)
+        clients_table = Table(clients_data, colWidths=col_widths, splitByHyphen=True)
         clients_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 6),
-            ('FONTSIZE', (0, 1), (-1, -1), 5),  # Zwiększona czcionka z 4 na 5
-            ('ROWHEIGHT', (0, 0), (-1, 0), 0.45*inch),  # Nagłówek na 2 linie
-            ('ROWHEIGHT', (0, 1), (-1, -1), 0.25*inch),  # Dane normalne
+            ('FONTSIZE', (0, 0), (-1, 0), 5),  # Nagłówki 5pt
+            ('FONTSIZE', (0, 1), (-1, -1), 6),  # Dane 6pt
+            ('ROWHEIGHT', (0, 0), (-1, 0), 0.55*inch),  # Nagłówek wyższy dla wieloliniowych
+            ('ROWHEIGHT', (0, 1), (-1, -1), 0.25*inch),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-            ('WRAP', (0, 0), (-1, 0), True),  # Łam tekst w nagłówkach
         ]))
         story.append(clients_table)
     
