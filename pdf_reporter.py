@@ -36,7 +36,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Stwórz PDF
     buffer = BytesIO() if filename is None else filename
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=0.3*inch, leftMargin=0.3*inch,
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=0.2*inch, leftMargin=0.2*inch,
                            topMargin=0.3*inch, bottomMargin=0.3*inch)
     
     # Style
@@ -239,14 +239,14 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
                     row_data.append(unidecode(text.strip()))
             clients_data.append(row_data)
         
-        # Oblicz szerokości kolumn - WIĘKSZE (wieloliniowe nagłówki)
+        # Oblicz szerokości kolumn - DUŻE (wieloliniowe nagłówki)
         col_widths = []
         for i, col_header in enumerate(csv_headers):
             max_len = len(col_header)
             for row in clients_data[1:]:  # Pomiń nagłówek
                 max_len = max(max_len, len(str(row[i])))
-            # Mapuj długość na szerokość - WIĘKSZE
-            width = max(0.45, min(1.2, max_len * 0.06))  # 0.45-1.2 cale
+            # Mapuj długość na szerokość - DUŻE
+            width = max(0.5, min(1.5, max_len * 0.08))  # 0.5-1.5 cale
             col_widths.append(width * inch)
         
         clients_table = Table(clients_data, colWidths=col_widths)
@@ -256,9 +256,9 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 5),  # Nagłówki 5pt
+            ('FONTSIZE', (0, 0), (-1, 0), 4),  # Nagłówki 4pt
             ('FONTSIZE', (0, 1), (-1, -1), 6),  # Dane 6pt
-            ('ROWHEIGHT', (0, 0), (-1, 0), 0.55*inch),  # Nagłówek wyższy dla wieloliniowych
+            ('ROWHEIGHT', (0, 0), (-1, 0), 0.65*inch),  # Nagłówek wyższy dla wieloliniowych
             ('ROWHEIGHT', (0, 1), (-1, -1), 0.25*inch),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
