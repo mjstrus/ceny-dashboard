@@ -40,13 +40,18 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Style
     styles = getSampleStyleSheet()
+    styles['Normal'].fontName = 'DejaVuSans'
+    styles['Heading1'].fontName = 'DejaVuSans-Bold'
+    styles['Heading2'].fontName = 'DejaVuSans-Bold'
+    
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
         fontSize=24,
         textColor=colors.HexColor(NAVY),
         spaceAfter=6,
-        alignment=1  # Center
+        alignment=1,  # Center
+        fontName='DejaVuSans-Bold'
     )
     heading_style = ParagraphStyle(
         'CustomHeading',
@@ -54,14 +59,15 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         fontSize=14,
         textColor=colors.HexColor(NAVY),
         spaceAfter=12,
-        spaceBefore=12
+        spaceBefore=12,
+        fontName='DejaVuSans-Bold'
     )
     
     story = []
     
     # TITLE
     story.append(Paragraph("📊 RAPORT STATYSTYKI LISTY KLIENTÓW", title_style))
-    story.append(Paragraph(f"Abacus Centrum | {datetime.now().strftime('%d.%m.%Y')}", styles['Normal']))
+    story.append(Paragraph(f"Abacus Centrum | {datetime.now().strftime('%d.%m.%Y')}", heading_style))
     story.append(Spacer(1, 0.3*inch))
     
     # METRYKI GŁÓWNE
