@@ -71,7 +71,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     story.append(Spacer(1, 0.3*inch))
     
     # METRYKI GŁÓWNE
-    story.append(Paragraph("Metryki Główne", heading_style))
+    story.append(Paragraph("Metryki Glowne", heading_style))
     
     metrics_data = [
         ['Liczba klientów', f"{summary.get('Liczba_Klientów_Razem', 0)}"],
@@ -145,7 +145,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     story.append(Spacer(1, 0.3*inch))
     
     # SEGMENTACJA SZCZEGÓŁOWA
-    story.append(Paragraph("Segmentacja Szczegółowa", heading_style))
+    story.append(Paragraph("Segmentacja szczegolowa", heading_style))
     
     seg_data = [
         ['Status', 'Liczba', 'Opis'],
