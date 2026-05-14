@@ -40,9 +40,9 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Style
     styles = getSampleStyleSheet()
-    styles['Normal'].fontName = 'DejaVuSans'
-    styles['Heading1'].fontName = 'DejaVuSans-Bold'
-    styles['Heading2'].fontName = 'DejaVuSans-Bold'
+    styles['Normal'].fontName = 'Helvetica'
+    styles['Heading1'].fontName = 'Helvetica-Bold'
+    styles['Heading2'].fontName = 'Helvetica-Bold'
     
     title_style = ParagraphStyle(
         'CustomTitle',
@@ -51,7 +51,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         textColor=colors.HexColor(NAVY),
         spaceAfter=6,
         alignment=1,  # Center
-        fontName='DejaVuSans-Bold'
+        fontName='Helvetica-Bold'
     )
     heading_style = ParagraphStyle(
         'CustomHeading',
@@ -60,18 +60,18 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         textColor=colors.HexColor(NAVY),
         spaceAfter=12,
         spaceBefore=12,
-        fontName='DejaVuSans-Bold'
+        fontName='Helvetica-Bold'
     )
     
     story = []
     
     # TITLE
-    story.append(Paragraph("📊 RAPORT STATYSTYKI LISTY KLIENTÓW", title_style))
+    story.append(Paragraph("RAPORT STATYSTYKI LISTY KLIENTÓW", title_style))
     story.append(Paragraph(f"Abacus Centrum | {datetime.now().strftime('%d.%m.%Y')}", heading_style))
     story.append(Spacer(1, 0.3*inch))
     
     # METRYKI GŁÓWNE
-    story.append(Paragraph("📈 Metryki Główne", heading_style))
+    story.append(Paragraph("Metryki Główne", heading_style))
     
     metrics_data = [
         ['Liczba klientów', f"{summary.get('Liczba_Klientów_Razem', 0)}"],
@@ -103,7 +103,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # WYKRESY
     story.append(PageBreak())
-    story.append(Paragraph("📊 Wizualizacja", heading_style))
+    story.append(Paragraph("Wizualizacja", heading_style))
     
     # Wykres 1: Segmentacja (Pie)
     fig, ax = plt.subplots(figsize=(5, 3), dpi=100)
@@ -145,7 +145,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     story.append(Spacer(1, 0.3*inch))
     
     # SEGMENTACJA SZCZEGÓŁOWA
-    story.append(Paragraph("📋 Segmentacja Szczegółowa", heading_style))
+    story.append(Paragraph("Segmentacja Szczegółowa", heading_style))
     
     seg_data = [
         ['Status', 'Liczba', 'Opis'],
