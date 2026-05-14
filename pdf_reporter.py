@@ -239,14 +239,14 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
                     row_data.append(unidecode(text.strip()))
             clients_data.append(row_data)
         
-        # Oblicz szerokości kolumn - ŚREDNIE (bo nagłówki wieloliniowe)
+        # Oblicz szerokości kolumn - WIĘKSZE (wieloliniowe nagłówki)
         col_widths = []
         for i, col_header in enumerate(csv_headers):
             max_len = len(col_header)
             for row in clients_data[1:]:  # Pomiń nagłówek
                 max_len = max(max_len, len(str(row[i])))
-            # Mapuj długość na szerokość - ŚREDNIE
-            width = max(0.4, min(1.0, max_len * 0.05))  # 0.4-1.0 cale
+            # Mapuj długość na szerokość - WIĘKSZE
+            width = max(0.45, min(1.2, max_len * 0.06))  # 0.45-1.2 cale
             col_widths.append(width * inch)
         
         clients_table = Table(clients_data, colWidths=col_widths)
