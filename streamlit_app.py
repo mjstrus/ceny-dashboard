@@ -142,7 +142,21 @@ if uploaded_file is not None:
         pass
     
     if errors:
-        st.error(f"Błąd: {errors}")
+        # Rozdziel krytyczne błędy od warnings
+        critical_errors = [e for e in errors if e.startswith('❌')]
+        warnings = [e for e in errors if e.startswith('⚠️')]
+        
+        # Pokaż warnings (nie blokują)
+        if warnings:
+            for w in warnings:
+                st.warning(w)
+        
+        # Blokuj tylko na krytyczne błędy
+        if critical_errors:
+            st.error(f"Błąd: {critical_errors}")
+        else:
+            st.session_state.df = df
+            st.success(f"✓ Wczytano {len(df)} klientów")
     else:
         st.session_state.df = df
         st.success(f"✓ Wczytano {len(df)} klientów")
