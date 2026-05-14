@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend dla streamlit
-from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak, Table, TableStyle
@@ -35,8 +35,8 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Stwórz PDF
     buffer = BytesIO() if filename is None else filename
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=0.5*inch, leftMargin=0.5*inch,
-                           topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=0.3*inch, leftMargin=0.3*inch,
+                           topMargin=0.3*inch, bottomMargin=0.3*inch)
     
     # Style
     styles = getSampleStyleSheet()
@@ -177,10 +177,9 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Przygotuj tabelę klientów
     if len(df) > 0:
-        # Kolumny do wyświetlenia
-        display_cols = ['Status', 'Klient', 'Widełka', 'Cena_Docelowa', 'Wzrost_%_Od_Faktycznej', 
-                       'Grupa_Klienta', 'Sugerowany_Rabat']
-        available_cols = [col for col in display_cols if col in df.columns]
+        # Kolumny do wyświetlenia - WSZYSTKIE (poza technicznymi)
+        exclude_cols = []  # Jeśli chcesz coś usunąć
+        available_cols = [col for col in df.columns if col not in exclude_cols]
         
         # Nagłówki
         clients_data = [available_cols]
@@ -191,19 +190,28 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             for col in available_cols:
                 val = row[col]
                 if isinstance(val, float):
-                    row_data.append(f"{val:.0f}" if col != 'Wzrost_%_Od_Faktycznej' else f"{val:.1f}%")
+                    # Formatowanie liczb
+                    if '%' in col:
+                        row_data.append(f"{val:.1f}%")
+                    elif 'PLN' in col or 'Cena' in col or 'Rabat' in col:
+                        row_data.append(f"{val:.0f}")
+                    else:
+                        row_data.append(f"{val:.1f}")
                 else:
                     row_data.append(str(val))
             clients_data.append(row_data)
         
-        # Tabela
-        clients_table = Table(clients_data, colWidths=[0.8*inch, 1.2*inch, 0.7*inch, 0.9*inch, 1.0*inch, 1.0*inch, 0.8*inch])
+        # Tabela - dostosuj szerokość do liczby kolumn
+        num_cols = len(available_cols)
+        col_width = 6.0 / num_cols  # Razem ~6 cali szerokości
+        clients_table = Table(clients_data, colWidths=[col_width*inch for _ in range(num_cols)])
         clients_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(NAVY)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('FONTSIZE', (0, 0), (-1, 0), 6),
+            ('FONTSIZE', (0, 1), (-1, -1), 5),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
