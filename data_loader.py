@@ -54,16 +54,32 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     }
     df['Typ_Umowy'] = df['Typ_Umowy'].map(typ_map).fillna(df['Typ_Umowy'])
     
-    # Oczyść VAT (trim)
-    df['VAT'] = df['VAT'].str.strip()
+    # Oczyść VAT (trim) i konwertuj na boolean
+    df['VAT'] = df['VAT'].astype(str).str.strip().str.lower()
+    df['VAT'] = df['VAT'].isin(['tak', 'true', '1', 'yes']).astype(int)
+    
+    # Konwertuj Cena_Stara na numeric PRZED walidacją
+    if 'Cena_Stara' in df.columns:
+        df['Cena_Stara'] = pd.to_numeric(df['Cena_Stara'], errors='coerce')
+    
+    # Konwertuj Miał_Rabat_10% na numeric PRZED walidacją
+    if 'Miał_Rabat_10%' in df.columns:
+        df['Miał_Rabat_10%'] = df['Miał_Rabat_10%'].astype(str).str.strip().str.lower()
+        df['Miał_Rabat_10%'] = df['Miał_Rabat_10%'].isin(['tak', 'true', '1', 'yes']).astype(int)
+    
+    # Konwertuj Doc kolumny na numeric PRZED walidacją
+    for col in ['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń', 'Doc_Średnia']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
     
     # Walidacja typów i wartości
-    validation_errors = validate_data(df)
+    validation_errors, df = validate_data(df)
     if validation_errors:
         errors.extend(validation_errors)
     
     if errors:
         return None, errors
+    
     
     # Jeśli nie ma Doc_Średnia, oblicz ją
     if 'Doc_Średnia' not in df.columns:
@@ -103,9 +119,10 @@ def validate_data(df: pd.DataFrame) -> list:
         errors.append(f"❌ Niepoprawny typ umowy: {invalid['Typ_Umowy'].unique()}")
     
     # Sprawdź ceny > 0
-    invalid_prices = df[df['Cena_Stara'] <= 0]
-    if not invalid_prices.empty:
-        errors.append(f"❌ Cena <= 0 dla ID: {list(invalid_prices['ID'].values)}")
+    if 'Cena_Stara' in df.columns:
+        invalid_prices = df[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna())]
+        if not invalid_prices.empty:
+            errors.append(f"❌ Cena <= 0 lub brakuje dla ID: {list(invalid_prices['ID'].values)}")
     
     # Sprawdź ilości dokumentów (mogą być NaN dla nowych klientów, to OK)
     for col in ['Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń']:
@@ -114,7 +131,7 @@ def validate_data(df: pd.DataFrame) -> list:
             if na_count > 0:
                 errors.append(f"⚠️  {na_count} brakuje wartości w {col} (OK dla nowych klientów)")
     
-    return errors
+    return errors, df
 
 
 def get_display_dataframe(df: pd.DataFrame) -> pd.DataFrame:
