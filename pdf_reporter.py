@@ -182,6 +182,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         col_mapping = {
             'Nazwa': 'Nazwa',
             'Typ': 'Typ_Umowy',
+            'VAT': 'VAT',
             'Status': 'Status',
             'Widełka': 'Widełka',
             'Cennik (bez rabatu)': 'Cena_Faktyczna',
@@ -203,6 +204,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         multiline_headers = [
             'Nazwa',
             'Typ',
+            'VAT',
             'Status',
             'Widełka',
             'Cennik\n(bez rabatu)',
@@ -225,7 +227,14 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             row_data = []
             for df_col in df_cols:
                 val = row[df_col]
-                if isinstance(val, float):
+                
+                # Specjalnie dla VAT
+                if df_col == 'VAT':
+                    if val == True or val == 1 or str(val).lower() in ['true', 'tak', '1']:
+                        row_data.append('tak')
+                    else:
+                        row_data.append('nie')
+                elif isinstance(val, float):
                     if 'Wzrost_%' in df_col:
                         row_data.append(f"{val:.1f}%")
                     elif 'PLN' in df_col or 'Cena' in df_col or 'Rabat' in df_col:
