@@ -122,7 +122,7 @@ def validate_data(df: pd.DataFrame) -> list:
     if 'Cena_Stara' in df.columns:
         missing_prices = df[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna())]
         if not missing_prices.empty:
-            missing_ids = list(missing_prices['ID'].values)
+            missing_ids = [int(x) for x in missing_prices["ID"].values]
             errors.append(f"[WARN]  Brakuje ceny dla ID: {missing_ids} - wstawiam domyślną 250 PLN")
             # Wstaw domyślną cenę
             df.loc[(df['Cena_Stara'] <= 0) | (df['Cena_Stara'].isna()), 'Cena_Stara'] = 250
