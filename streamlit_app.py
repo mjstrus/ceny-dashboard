@@ -141,25 +141,25 @@ if uploaded_file is not None:
     except:
         pass
     
-    if errors:
-        # Rozdziel krytyczne błędy od warnings
-        critical_errors = [e for e in errors if e.startswith('[ERROR]') or e.startswith('Blad')]
-        warnings = [e for e in errors if e.startswith('[WARN]') or e.startswith('Ostrzezenie')]
-        
-        # Pokaż warnings (nie blokują)
-        if warnings:
-            for w in warnings:
-                st.warning(w)
-        
-        # Blokuj tylko na krytyczne błędy
-        if critical_errors:
-            st.error(f"Blad: {critical_errors}")
-        elif df is not None:
+    # Rozdziel krytyczne błędy od warnings
+    critical_errors = [e for e in errors if e.startswith('[ERROR]')]
+    warnings = [e for e in errors if e.startswith('[WARN]')]
+    
+    # Pokaż warnings (nie blokują)
+    for w in warnings:
+        st.warning(w)
+    
+    # Blokuj tylko na krytyczne błędy
+    if critical_errors:
+        for err in critical_errors:
+            st.error(err)
+    else:
+        # Brak błędów krytycznych - wczytaj dane
+        if df is not None:
             st.session_state.df = df
             st.success(f"OK Wczytano {len(df)} klientow")
-    elif df is not None:
-        st.session_state.df = df
-        st.success(f"OK Wczytano {len(df)} klientow")
+        else:
+            st.error("Blad: nie udalo sie wczytac danych")
 
 # ============================================================================
 # POKAZ DANE
