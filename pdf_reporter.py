@@ -274,10 +274,10 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 6),  # Nagłówki 6pt (było 7pt)
-            ('FONTSIZE', (0, 1), (-1, -1), 6),  # Dane 6pt (było 8pt) - MNIEJSZY FONT
-            ('ROWHEIGHT', (0, 0), (-1, 0), 0.45*inch),  # Nagłówek jeszcze niższy (było 0.55")
-            ('ROWHEIGHT', (0, 1), (-1, -1), 0.15*inch),  # Wiersze bardzo kompaktowe (było 0.20")
+            ('FONTSIZE', (0, 0), (-1, 0), 8),  # Nagłówki 8pt (było 6pt) +2pt
+            ('FONTSIZE', (0, 1), (-1, -1), 8),  # Dane 8pt (było 6pt) +2pt
+            ('ROWHEIGHT', (0, 0), (-1, 0), 0.50*inch),  # Nagłówek wyższy (było 0.45") dla większego fontu
+            ('ROWHEIGHT', (0, 1), (-1, -1), 0.18*inch),  # Wiersze trochy wyższe (było 0.15") dla większego fontu
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
