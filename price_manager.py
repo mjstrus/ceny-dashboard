@@ -19,7 +19,7 @@ def get_default_pricing() -> pd.DataFrame:
         '11-20': [1150, 980, 450, 420, 400, 250],
         '21-50': [1600, 1350, 580, 550, 530, 250],
         '51-100': [2250, 1800, 680, 650, 630, 250],
-        'Paczka 25 (100+)': [500, 400, 150, 120, 100, 0]
+        '100+': [500, 400, 150, 120, 100, 0]
     }
     
     return pd.DataFrame(data)
@@ -43,7 +43,7 @@ def apply_global_modification(df: pd.DataFrame, typ: str, vat: str, percent_chan
     mask = (df['Typ'] == typ) & (df['VAT'] == vat)
     
     # Zmodyfikuj wszystkie kolumny cenowe
-    price_cols = ['1-10', '11-20', '21-50', '51-100', 'Paczka 25 (100+)']
+    price_cols = ['1-10', '11-20', '21-50', '51-100', '100+']
     
     for col in price_cols:
         if col in df.columns:
