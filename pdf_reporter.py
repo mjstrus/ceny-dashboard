@@ -36,8 +36,8 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Stwórz PDF
     buffer = BytesIO() if filename is None else filename
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=0.2*inch, leftMargin=0.2*inch,
-                           topMargin=0.3*inch, bottomMargin=0.3*inch)
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=0.1*inch, leftMargin=0.1*inch,
+                           topMargin=0.2*inch, bottomMargin=0.2*inch)
     
     # Style
     styles = getSampleStyleSheet()
@@ -178,44 +178,42 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
     
     # Przygotuj tabelę klientów
     if len(df) > 0:
-        # Mapowanie: CSV -> DF columns
+        # Mapowanie: CSV -> DF columns (w kolejności Marcina)
         col_mapping = {
             'Nazwa': 'Nazwa',
             'Typ': 'Typ_Umowy',
             'VAT': 'VAT',
             'Status': 'Status',
-            'Widełka': 'Widełka',
-            'Cennik (bez rabatu)': 'Cena_Faktyczna',
-            'Miał rabat?': 'Miał_Rabat_10%',
-            'Płacili (mc)': 'Cena_Faktyczna',
-            'Grupa Klienta': 'Grupa_Klienta',
-            'Nowa Cena': 'Cena_Docelowa',
-            'Sugerowany rabat (PLN)': 'Sugerowany_Rabat',
+            'Widełki': 'Cena_Range',
+            'Miał rabat 10%?': 'Miał_Rabat_10%',
+            'Cena Stara': 'Cena_Stara',
+            'Grupa klienta': 'Grupa_Klienta',
+            'Cena Nowa': 'Cena_Docelowa',
             'Wzrost PLN': 'Wzrost_PLN',
-            'Wzrost % (z rabatem)': 'Wzrost_%_Od_Faktycznej',
-            'Wzrost % (gdyby brak rabatu)': 'Wzrost_%_Bez_Rabatu'
+            'Wzrost %': 'Wzrost_%_Od_Faktycznej',
         }
         
-        # Weź tylko kolumny które istnieją w df
-        csv_headers = [k for k, v in col_mapping.items() if v in df.columns]
-        df_cols = [col_mapping[k] for k in csv_headers]
+        # Weź tylko kolumny które istnieją w df (w prawidłowej kolejności)
+        csv_headers = []
+        df_cols = []
+        for k, v in col_mapping.items():
+            if v in df.columns:
+                csv_headers.append(k)
+                df_cols.append(v)
         
-        # Podziel długie nazwy na wiersze
+        # Podziel długie nazwy na wiersze (multiline headers)
         multiline_headers = [
             'Nazwa',
             'Typ',
             'VAT',
             'Status',
-            'Widełka',
-            'Cennik\n(bez rabatu)',
-            'Miał\nrabat?',
-            'Płacili\n(mc)',
-            'Grupa\nKlienta',
-            'Nowa\nCena',
-            'Sugerowany\nrabat\n(PLN)',
+            'Widełki',
+            'Miał\nrabat\n10%?',
+            'Cena\nStara',
+            'Grupa\nklienta',
+            'Cena\nNowa',
             'Wzrost\nPLN',
-            'Wzrost %\n(z rabatem)',
-            'Wzrost %\n(gdyby\nbrak rabatu)'
+            'Wzrost\n%'
         ]
         multiline_headers = multiline_headers[:len(csv_headers)]
         
@@ -249,13 +247,24 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             clients_data.append(row_data)
         
         # Oblicz szerokości kolumn - DUŻE (wieloliniowe nagłówki)
+        # Custom widths dla każdej kolumny (proporcjonalnie do zawartości)
+        col_width_map = {
+            'Nazwa': 2.0,                    # Najdłuższe (nazwy klientów)
+            'Typ': 0.5,                      # Krótkie (KH, KPIR, Ryczałt)
+            'VAT': 0.4,                      # Krótkie (tak/nie)
+            'Status': 0.6,                   # Średnie (Zielony, Żółty, etc)
+            'Widełki': 0.5,                  # Krótkie (1-10, 11-20, etc)
+            'Miał rabat 10%?': 0.6,          # Średnie (0/1 lub Tak/Nie)
+            'Cena Stara': 0.7,               # Liczby (4-digit)
+            'Grupa klienta': 0.8,            # Średnie
+            'Cena Nowa': 0.7,                # Liczby (4-digit)
+            'Wzrost PLN': 0.7,               # Liczby (3-4 digit)
+            'Wzrost %': 0.6,                 # Krótkie (% values)
+        }
+        
         col_widths = []
-        for i, col_header in enumerate(csv_headers):
-            max_len = len(col_header)
-            for row in clients_data[1:]:  # Pomiń nagłówek
-                max_len = max(max_len, len(str(row[i])))
-            # Mapuj długość na szerokość - DUŻE
-            width = max(0.5, min(1.5, max_len * 0.08))  # 0.5-1.5 cale
+        for col_header in csv_headers:
+            width = col_width_map.get(col_header, 0.7)  # Default 0.7 jeśli nie w mapie
             col_widths.append(width * inch)
         
         clients_table = Table(clients_data, colWidths=col_widths)
@@ -265,10 +274,10 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 4),  # Nagłówki 4pt
-            ('FONTSIZE', (0, 1), (-1, -1), 6),  # Dane 6pt
-            ('ROWHEIGHT', (0, 0), (-1, 0), 0.65*inch),  # Nagłówek wyższy dla wieloliniowych
-            ('ROWHEIGHT', (0, 1), (-1, -1), 0.25*inch),
+            ('FONTSIZE', (0, 0), (-1, 0), 7),  # Nagłówki 7pt (było 4pt)
+            ('FONTSIZE', (0, 1), (-1, -1), 8),  # Dane 8pt (było 6pt)
+            ('ROWHEIGHT', (0, 0), (-1, 0), 0.55*inch),  # Nagłówek niższy (było 0.65)
+            ('ROWHEIGHT', (0, 1), (-1, -1), 0.20*inch),  # Wiersze kompaktowsze (było 0.25)
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
