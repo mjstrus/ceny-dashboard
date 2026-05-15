@@ -247,24 +247,24 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             clients_data.append(row_data)
         
         # Oblicz szerokości kolumn - DUŻE (wieloliniowe nagłówki)
-        # Custom widths dla każdej kolumny (proporcjonalnie do zawartości)
+        # Custom widths dla każdej kolumny - BARDZO KOMPAKTOWE
         col_width_map = {
-            'Nazwa': 2.0,                    # Najdłuższe (nazwy klientów)
-            'Typ': 0.5,                      # Krótkie (KH, KPIR, Ryczałt)
-            'VAT': 0.4,                      # Krótkie (tak/nie)
-            'Status': 0.6,                   # Średnie (Zielony, Żółty, etc)
-            'Widełki': 0.5,                  # Krótkie (1-10, 11-20, etc)
-            'Miał rabat 10%?': 0.6,          # Średnie (0/1 lub Tak/Nie)
-            'Cena Stara': 0.7,               # Liczby (4-digit)
-            'Grupa klienta': 0.8,            # Średnie
-            'Cena Nowa': 0.7,                # Liczby (4-digit)
-            'Wzrost PLN': 0.7,               # Liczby (3-4 digit)
-            'Wzrost %': 0.6,                 # Krótkie (% values)
+            'Nazwa': 1.4,                    # Zmniejszone (było 2.0")
+            'Typ': 0.4,                      # (było 0.5")
+            'VAT': 0.3,                      # (było 0.4")
+            'Status': 0.5,                   # (było 0.6")
+            'Widełki': 0.4,                  # (było 0.5")
+            'Miał rabat 10%?': 0.45,         # (było 0.6")
+            'Cena Stara': 0.55,              # (było 0.7")
+            'Grupa klienta': 0.6,            # (było 0.8")
+            'Cena Nowa': 0.55,               # (było 0.7")
+            'Wzrost PLN': 0.55,              # (było 0.7")
+            'Wzrost %': 0.45,                # (było 0.6")
         }
         
         col_widths = []
         for col_header in csv_headers:
-            width = col_width_map.get(col_header, 0.7)  # Default 0.7 jeśli nie w mapie
+            width = col_width_map.get(col_header, 0.5)  # Default 0.5 jeśli nie w mapie
             col_widths.append(width * inch)
         
         clients_table = Table(clients_data, colWidths=col_widths)
@@ -274,10 +274,10 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 7),  # Nagłówki 7pt (było 4pt)
-            ('FONTSIZE', (0, 1), (-1, -1), 8),  # Dane 8pt (było 6pt)
-            ('ROWHEIGHT', (0, 0), (-1, 0), 0.55*inch),  # Nagłówek niższy (było 0.65)
-            ('ROWHEIGHT', (0, 1), (-1, -1), 0.20*inch),  # Wiersze kompaktowsze (było 0.25)
+            ('FONTSIZE', (0, 0), (-1, 0), 6),  # Nagłówki 6pt (było 7pt)
+            ('FONTSIZE', (0, 1), (-1, -1), 6),  # Dane 6pt (było 8pt) - MNIEJSZY FONT
+            ('ROWHEIGHT', (0, 0), (-1, 0), 0.45*inch),  # Nagłówek jeszcze niższy (było 0.55")
+            ('ROWHEIGHT', (0, 1), (-1, -1), 0.15*inch),  # Wiersze bardzo kompaktowe (było 0.20")
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
