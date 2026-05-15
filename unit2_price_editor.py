@@ -106,14 +106,37 @@ def handle_price_editor_submission(edited_df, session_state):
                 updates[col]
             ).values
         
-        # Recalculate prices and summary
+        # ===== NOWE: Przelicz Wzrost na bazie nowej Cena_Docelowa =====
+        # Wzrost_Kwota = Cena_Docelowa - Cena_Faktyczna
+        # Nota: Cena_Faktyczna = Cena_Stara (bo już zawiera rabat!)
+        # Safety check - jeśli Cena_Faktyczna nie istnieje, utwórz z Cena_Stara
+        if 'Cena_Faktyczna' not in session_state.df.columns:
+            session_state.df['Cena_Faktyczna'] = session_state.df['Cena_Stara'].round(2)
+        
+        session_state.df['Wzrost_Kwota'] = (
+            session_state.df['Cena_Docelowa'] - session_state.df['Cena_Faktyczna']
+        ).round(2)
+        
+        # Wzrost_% (z rabatem) = (Cena_Docelowa - Cena_Faktyczna) / Cena_Faktyczna * 100
+        session_state.df['Wzrost_%_Od_Faktycznej'] = (
+            ((session_state.df['Cena_Docelowa'] - session_state.df['Cena_Faktyczna']) / 
+             session_state.df['Cena_Faktyczna'].replace(0, 1)) * 100
+        ).round(2)
+        
+        # Wzrost_% (gdyby brak rabatu) = (Cena_Docelowa - Cena_Stara) / Cena_Stara * 100
+        session_state.df['Wzrost_%_Bez_Rabatu'] = (
+            ((session_state.df['Cena_Docelowa'] - session_state.df['Cena_Stara']) / 
+             session_state.df['Cena_Stara'].replace(0, 1)) * 100
+        ).round(2)
+        
+        # Przelicz summary na bazie nowych danych
         session_state.df_with_prices = calculate_new_prices(
             session_state.df, 
             session_state.pricing_df
         )
         session_state.summary = generate_summary(session_state.df_with_prices)
         
-        st.success("✅ Zmiany zatwierdzone! Statystyki przeobliczone.")
+        st.success("✅ Zmiany zatwierdzone! Wzrost przeobliczony. Statystyki przeobliczone.")
         st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano")
         
         # Refresh page to show updated statistics
@@ -126,6 +149,8 @@ def handle_price_editor_submission(edited_df, session_state):
         
     except Exception as e:
         st.error(f"❌ Błąd podczas aktualizacji: {str(e)}")
+        import traceback
+        st.error(traceback.format_exc())
         return False
 
 
