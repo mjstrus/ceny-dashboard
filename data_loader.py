@@ -14,7 +14,7 @@ except ImportError:
     # Fallback - hardcoded required columns
     REQUIRED_DATA_COLUMNS = [
         'ID', 'Nazwa', 'Typ_Umowy', 'VAT', 'Doc_Marzec', 'Doc_Luty',
-        'Doc_Styczeń', 'Doc_Avg', 'Cena_Stara', 'Miał_Rabat_10%',
+        'Doc_Styczeń', 'Doc_Średnia', 'Cena_Stara', 'Miał_Rabat_10%',
     ]
     def validate_data_columns(df):
         """Fallback validation function"""
