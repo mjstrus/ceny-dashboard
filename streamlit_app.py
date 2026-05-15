@@ -189,11 +189,35 @@ if st.session_state.df is not None:
     # OBLICZ CENY (dla Unit 3 i Unit 2)
     # ====================================================================
     
-    # Jeśli były edycje w Unit 2 - użyj przeliczeń z session_state
-    if 'df_with_prices' in st.session_state and st.session_state.df_with_prices is not None:
-        df_with_prices = st.session_state.df_with_prices
-    else:
-        df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+    # Inicjalizuj session_state.df_with_prices jeśli nie istnieje
+    if 'df_with_prices' not in st.session_state or st.session_state.df_with_prices is None:
+        st.session_state.df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+    
+    # ZAWSZE używaj session_state jako source of truth
+    df_with_prices = st.session_state.df_with_prices
+    
+    # To samo dla summary - inicjalizuj jeśli nie istnieje
+    if 'summary' not in st.session_state or st.session_state.summary is None:
+        from summary_generator import generate_summary
+        st.session_state.summary = generate_summary(df_with_prices)
+    
+    # ZAWSZE używaj session_state
+    from summary_generator import get_alerts
+    summary = st.session_state.summary
+    alerts = get_alerts(summary)
+    
+    
+    
+    # ====================================================================
+    # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
+    # ====================================================================
+    
+    st.divider()
+    st.header("💵 Edycja cen klientów")
+    
+    from unit2_price_editor import render_unit2_complete_section
+    render_unit2_complete_section(df_with_prices)
+    
     
     # ====================================================================
     # UNIT 3: PODSUMOWANIE (SUMMARY DASHBOARD)
@@ -202,16 +226,11 @@ if st.session_state.df is not None:
     st.divider()
     st.header("📊 Statystyka wgranej listy klientów")
     
-    from summary_generator import generate_summary, get_alerts
     import plotly.graph_objects as go
     import plotly.express as px
     
-    # Oblicz summary (lub użyj przelichonego z Unit 2)
-    if 'summary' in st.session_state and st.session_state.summary is not None:
-        summary = st.session_state.summary
-    else:
-        summary = generate_summary(df_with_prices)
-    alerts = get_alerts(summary)
+    # Summary i alerts już obliczone wyżej (linie 205-207)
+    
     
     # Karty metryczne
     col1, col2, col3, col4 = st.columns(4)
@@ -387,102 +406,13 @@ if st.session_state.df is not None:
                 st.info(alert)
             else:
                 st.write(alert)
-    
-    # ====================================================================
-    # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
-    # ====================================================================
-    
-    st.divider()
-    st.header("💵 Edycja cen klientów")
-    
-    st.info("""
-    **Cena_Docelowa = NOWY CENNIK** (ze sekcji "Zatwierdzenie cennika")
-    
-    **Cena_Docelowa liczony na podstawie:** Typ + VAT + Liczba dokumentów
-    
-    **Grupy klientów:**
-    - **Standard:** cena z cennnika
-    - **VIP:** cena edytowalna (negocjacje)
-    - **FREE:** 0 PLN (gratis dla zaprzyjaźnionych)
-    
-    **Dwie kolumny wzrostu:**
-    - **Wzrost % (z rabatem):** Rzeczywisty wzrost od ceny którą płacili (z uwzględnieniem rabatu)
-    - **Wzrost % (gdyby brak rabatu):** Wzrost gdyby nigdy nie mieli rabatu za Saldeo - pokazuje prawdziwy wzrost ceny cennnika
-    
-    **Przykład:**
-    - Klient miał rabat 10%, płacił 900 PLN
-    - Nowa cena: 1100 PLN
-    - Wzrost z rabatem: (1100-900)/900 = 22%
-    - Wzrost bez rabatu: (1100-1000)/1000 = 10% ← to rzeczywisty wzrost ceny
-    """)
-    
-    # Przygotuj tabelę do edycji
-    df_editable = get_price_table(df_with_prices)
-    
-    # EDYTOWALNA TABELA
-    st.subheader("Edytuj tabelę poniżej")
-    
-    edited_df = st.data_editor(
-        df_editable,
-        use_container_width=True,
-        hide_index=True,
-        key="price_editor",
-        column_config={
-            "👑 Grupa Klienta": st.column_config.SelectboxColumn(
-                "Grupa",
-                options=["Standard", "VIP", "FREE"],
-                required=True
-            ),
-            "💰 Nowa Cena": st.column_config.NumberColumn(
-                "Nowa Cena",
-                min_value=0,
-                step=1.0,
-                format="%.2f"
-            ),
-        }
-    )
-    
-    # Button: Zatwierdź zmiany
-    if st.button("OK Zatwierdz wszystkie zmiany", type="primary"):
-        # Mapping: zmień nazwy emoji na oryginalne
-        column_mapping = {
-            '👑 Grupa Klienta': 'Grupa_Klienta',
-            '💰 Nowa Cena': 'Cena_Docelowa'
-        }
-        
-        # Zaintegruj zmiany z oryginalnym DataFrame
-        for idx, row in edited_df.iterrows():
-            client_id = row['ID']
-            # Grupa_Klienta
-            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Grupa_Klienta'] = row['👑 Grupa Klienta']
-            # Cena_Docelowa
-            st.session_state.df.loc[st.session_state.df['ID'] == client_id, 'Cena_Docelowa'] = row['💰 Nowa Cena']
-        
-        # PRZEOBLICZYĆ statystyki i raport z nowymi cenami!
-        from calculate_new_prices import calculate_new_prices
-        from summary_generator import generate_summary
-        
-        st.session_state.df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
-        st.session_state.summary = generate_summary(st.session_state.df_with_prices)
-        
-        st.success("OK Zmiany zatwierdzone! Statystyki przeobliczone.")
-        st.info(f"OK {len(edited_df)} klientow zaktualizowano")
-        
-        # Odśwież stronę aby pokazać nowe statystyki
-        try:
-            st.rerun()
-        except:
-            st.warning("Odśwież stronę F5 aby zobaczyć zmienione statystyki w Unit 3")
-    
-    st.divider()
-    st.success("OK Gotowe! Dashboard ready.")
 
 else:
-    st.warning("📥 Wczytaj dane aby kontynuować Unit 2")
+    st.warning("📥 Wczytaj plik Excel aby kontynuować")
 
-# ============================================================================
+# ====================================================================
 # FOOTER
-# ============================================================================
+# ====================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")
+st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Edycja → Statystyka")
