@@ -107,14 +107,32 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     # Pobierz ceny z Unit 0 cennnika
     def get_cena_docelowa(row):
         try:
-            price = get_price_from_pricing(
-                row['Typ_Umowy'],
-                row['VAT'],
-                row['Cena_Range'],
-                pricing_df
-            )
-            return price if not pd.isna(price) else row['Cena_Stara']
-        except:
+            doc_avg = row['Doc_Avg']
+            typ = row['Typ_Umowy']
+            vat = row['VAT']
+            
+            # Jeśli <= 100 dokumentów: zwróć cenę z prawidłowego zakresu
+            if doc_avg <= 100:
+                price = get_price_from_pricing(typ, vat, row['Cena_Range'], pricing_df)
+                return price if not pd.isna(price) else row['Cena_Stara']
+            
+            # Jeśli > 100 dokumentów: oblicz 100 dokumentów + paczki
+            else:
+                # Cena za 100 dokumentów (wg tabeli 51-100)
+                base_price = get_price_from_pricing(typ, vat, '51-100', pricing_df)
+                
+                # Cena za paczkę (25 dokumentów)
+                package_price = get_price_from_pricing(typ, vat, '100+', pricing_df)
+                
+                # Ile paczek (każda 25 dokumentów)
+                docs_over_100 = doc_avg - 100
+                num_packages = int(np.ceil(docs_over_100 / 25))
+                
+                # Razem
+                total_price = base_price + (num_packages * package_price)
+                
+                return total_price if not pd.isna(total_price) else row['Cena_Stara']
+        except Exception as e:
             return row['Cena_Stara']
     
     df['Cena_Docelowa'] = df.apply(get_cena_docelowa, axis=1)
