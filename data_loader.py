@@ -41,12 +41,11 @@ def load_excel_file(file_path: str) -> Tuple[pd.DataFrame, list]:
     except Exception as e:
         return None, [f"[ERROR] Błąd wczytania Excel: {str(e)}"]
     
-    # Walidacja struktury
+    # Walidacja struktury - tylko kolumny które MUSZĄ być w excelu
     errors = []
     required_columns = {
         'ID', 'Nazwa', 'Typ_Umowy', 'VAT', 'Cena_Stara',
         'Doc_Marzec', 'Doc_Luty', 'Doc_Styczeń', 'Miał_Rabat_10%',
-        'Doc_Średnia', 'Grupa_Widełk', 'Grupa_Klienta', 'Cena_Nowa'
     }
     
     missing = required_columns - set(df.columns)
@@ -124,8 +123,8 @@ def validate_data(df: pd.DataFrame) -> list:
     missing_cols = set(REQUIRED_DATA_COLUMNS) - set(df.columns)
     if missing_cols:
         errors.append(f"[ERROR] Brakuje kolumn: {sorted(missing_cols)}")
-        # Jeśli brakuje kritycznych kolumn, zwróć błąd zaraz
-        return errors
+        # Zawsze zwracaj tuple (errors, df)
+        return errors, df
     # Sprawdź duplikaty ID
     if df['ID'].duplicated().any():
         dup_ids = df[df['ID'].duplicated()]['ID'].unique()
