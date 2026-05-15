@@ -141,8 +141,16 @@ def render_unit2_complete_section(df_with_prices):
     edited_df = render_unit2_editor(df_with_prices)
     
     # Button to submit edits
-    if st.button("OK Zatwierdz wszystkie zmiany", type="primary"):
-        handle_price_editor_submission(edited_df, st.session_state)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("✅ OK - ZATWIERDŹ WSZYSTKIE ZMIANY", type="primary", use_container_width=True):
+            handle_price_editor_submission(edited_df, st.session_state)
     
     st.divider()
-    st.success("OK Gotowe! Dashboard ready.")
+    st.success("✅ Gotowe! Statystyki w Unit 3 powinny się zaktualizować.")
+    
+    # Debug info
+    with st.expander("🔧 Debug: Stan session_state"):
+        st.write(f"df shape: {st.session_state.df.shape if st.session_state.df is not None else 'None'}")
+        st.write(f"df_with_prices shape: {st.session_state.df_with_prices.shape if 'df_with_prices' in st.session_state and st.session_state.df_with_prices is not None else 'None'}")
+        st.write(f"summary keys: {list(st.session_state.summary.keys()) if 'summary' in st.session_state else 'None'}")
