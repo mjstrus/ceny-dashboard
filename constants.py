@@ -71,7 +71,7 @@ REQUIRED_DATA_COLUMNS = [
     'Doc_Marzec',          # Documents in March
     'Doc_Luty',            # Documents in February
     'Doc_Styczeń',         # Documents in January
-    'Doc_Avg',             # Average documents (computed or provided)
+    'Doc_Średnia',         # Average documents (computed from monthly or provided)
     'Cena_Stara',          # Old price (what they paid)
     'Miał_Rabat_10%',      # Had 10% discount (0 or 1)
 ]
