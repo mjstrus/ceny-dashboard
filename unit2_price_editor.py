@@ -58,7 +58,7 @@ def render_unit2_editor(df_with_prices):
         column_config={
             "👑 Grupa Klienta": st.column_config.SelectboxColumn(
                 "Grupa",
-                options=["Standard", "VIP", "FREE"],
+                options=["Standard", "Indywidualna", "VIP", "FREE"],
                 required=True
             ),
             "💰 Nowa Cena": st.column_config.NumberColumn(
