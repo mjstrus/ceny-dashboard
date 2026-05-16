@@ -201,12 +201,6 @@ if st.session_state.df is not None:
         from summary_generator import generate_summary
         st.session_state.summary = generate_summary(df_with_prices)
     
-    # ZAWSZE używaj session_state
-    from summary_generator import get_alerts
-    summary = st.session_state.summary
-    alerts = get_alerts(summary)
-    
-    
     
     # ====================================================================
     # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
@@ -229,7 +223,10 @@ if st.session_state.df is not None:
     import plotly.graph_objects as go
     import plotly.express as px
     
-    # Summary i alerts już obliczone wyżej (linie 205-207)
+    # NOWE: Czytaj summary DYNAMICZNIE (zawsze aktualny z session_state)
+    from summary_generator import get_alerts
+    summary = st.session_state.summary  # ← Teraz czyta ZAWSZE aktualny summary
+    alerts = get_alerts(summary)
     
     
     # Karty metryczne
