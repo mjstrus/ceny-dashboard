@@ -365,8 +365,9 @@ else:
         
         st.write("**Ręczna weryfikacja:**")
         
-        # Pokaż sumy
-        paying = debug_df[debug_df['Grupa_Klienta'] != 'FREE']
+        # Pokaż sumy - normalize case!
+        debug_df['Grupa_Klienta_Upper'] = debug_df['Grupa_Klienta'].str.upper()
+        paying = debug_df[debug_df['Grupa_Klienta_Upper'] != 'FREE']
         
         col1, col2, col3 = st.columns(3)
         with col1:
