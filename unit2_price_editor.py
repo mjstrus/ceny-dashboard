@@ -136,14 +136,8 @@ def handle_price_editor_submission(edited_df, session_state):
         )
         session_state.summary = generate_summary(session_state.df_with_prices)
         
-        st.success("✅ Zmiany zatwierdzone! Wzrost przeobliczony. Statystyki przeobliczone.")
-        st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano")
-        
-        # Refresh page to show updated statistics
-        try:
-            st.rerun()
-        except:
-            st.warning("Odśwież stronę F5 aby zobaczyć zmienione statystyki w Unit 3")
+        st.success("✅ Zmiany zatwierdzone! Wzrost i statystyki przeobliczone.")
+        st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano - statystyki w Unit 3 automatycznie się odświeżyły")
         
         return True
         
