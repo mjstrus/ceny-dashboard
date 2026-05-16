@@ -107,7 +107,7 @@ def handle_price_editor_submission(edited_df, session_state):
         for idx in updates_df.index:
             mask = session_state.df['ID'] == idx
             if mask.any():
-                session_state.df.loc[mask, 'Grupa_Klienta'] = updates_df.loc[idx, 'Grupa_Klienta']
+                session_state.df.loc[mask, 'Grupa_Klienta'] = updates_df.loc[idx, 'Grupa_Klienta'].upper()
                 session_state.df.loc[mask, 'Cena_Docelowa'] = updates_df.loc[idx, 'Cena_Docelowa']
         
         # Przelicz całe df_with_prices na bazie zmienionego session_state.df
