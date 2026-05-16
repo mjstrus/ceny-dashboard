@@ -1,17 +1,17 @@
 """
-Unit 2: Price Editor for Ceny Dashboard
-Handles rendering the price editing table and processing batch updates
+Unit 2: Price Editor - FIXED VERSION
+Uproszczona, działająca wersja
 """
 
 import streamlit as st
 import pandas as pd
-from calculate_new_prices import get_price_table, calculate_new_prices
+from calculate_new_prices import calculate_new_prices
 from summary_generator import generate_summary
 
 
 def render_unit2_editor(df_with_prices):
     """
-    Render Unit 2: Price editing interface with editable table
+    Render Unit 2: Price editing interface with ONLY editable columns
     
     Args:
         df_with_prices: DataFrame with calculated prices
@@ -20,37 +20,38 @@ def render_unit2_editor(df_with_prices):
         edited_df: DataFrame with user edits from st.data_editor
     """
     
-    st.divider()
-    st.header("💵 Edycja cen klientów")
-    
     st.info("""
-    **Cena_Docelowa = NOWY CENNIK** (ze sekcji "Zatwierdzenie cennika")
+    **Edytuj poniższe kolumny:**
+    - **👑 Grupa Klienta:** Standard / VIP / FREE
+    - **💰 Nowa Cena:** Zmień cenę jeśli trzeba
     
-    **Cena_Docelowa liczony na podstawie:** Typ + VAT + Liczba dokumentów
-    
-    **Grupy klientów:**
-    - **Standard:** cena z cennnika
-    - **VIP:** cena edytowalna (negocjacje)
-    - **FREE:** 0 PLN (gratis dla zaprzyjaźnionych)
-    
-    **Dwie kolumny wzrostu:**
-    - **Wzrost % (z rabatem):** Rzeczywisty wzrost od ceny którą płacili (z uwzględnieniem rabatu)
-    - **Wzrost % (gdyby brak rabatu):** Wzrost gdyby nigdy nie mieli rabatu za Saldeo - pokazuje prawdziwy wzrost ceny cennnika
-    
-    **Przykład:**
-    - Klient miał rabat 10%, płacił 900 PLN
-    - Nowa cena: 1100 PLN
-    - Wzrost z rabatem: (1100-900)/900 = 22%
-    - Wzrost bez rabatu: (1100-1000)/1000 = 10%
+    **Pozostałe kolumny pokazują stan:**
+    - Cena Stara: Cena którą płacił dotychczas
+    - Status: Zielony/Żółty/Czarny (na bazie wzrostu)
     """)
     
-    df_editable = get_price_table(df_with_prices)
+    # Przygotuj TYLKO kolumny do edycji - bez None!
+    df_display = df_with_prices[[
+        'ID', 'Nazwa', 'Cena_Stara', 'Cena_Docelowa', 'Grupa_Klienta', 'Status'
+    ]].copy()
+    
+    # Formatuj Status z emoji
+    df_display['Status'] = df_display['Status'].apply(
+        lambda x: '🟢 Zielony' if x == 'Zielony' 
+                  else '🟡 Żółty' if x == 'Żółty'
+                  else '🔴 Czerwony' if x == 'Czerwony'
+                  else '⚫ Czarny' if x == 'Czarny'
+                  else '❓ ?'
+    )
+    
+    # Zmień nazwy na user-friendly (ale pamiętaj oryginalne!)
+    df_display.columns = ['ID', 'Nazwa', 'Cena Stara', '💰 Nowa Cena', '👑 Grupa Klienta', '📊 Status']
     
     # EDYTOWALNA TABELA
     st.subheader("Edytuj tabelę poniżej")
     
     edited_df = st.data_editor(
-        df_editable,
+        df_display,
         use_container_width=True,
         hide_index=True,
         key="price_editor",
@@ -66,6 +67,10 @@ def render_unit2_editor(df_with_prices):
                 step=1.0,
                 format="%.2f"
             ),
+            "📊 Status": st.column_config.TextColumn(disabled=True),
+            "Cena Stara": st.column_config.NumberColumn(disabled=True),
+            "Nazwa": st.column_config.TextColumn(disabled=True),
+            "ID": st.column_config.TextColumn(disabled=True),
         }
     )
     
@@ -74,7 +79,7 @@ def render_unit2_editor(df_with_prices):
 
 def handle_price_editor_submission(edited_df, session_state):
     """
-    Handle submitted price edits with batch update (O(n) instead of O(n²))
+    Handle submitted price edits - UPDATE session_state
     
     Args:
         edited_df: DataFrame with edited prices and groups
@@ -89,55 +94,33 @@ def handle_price_editor_submission(edited_df, session_state):
         return False
     
     try:
-        # Extract updated columns from edited_df
-        updates = pd.DataFrame({
+        # Mapuj z renamed columns z powrotem na oryginalne nazwy
+        updates_data = {
             'ID': edited_df['ID'],
-            'Grupa_Klienta': edited_df.get('👑 Grupa Klienta', edited_df.get('Grupa_Klienta')),
-            'Cena_Docelowa': edited_df.get('💰 Nowa Cena', edited_df.get('Cena_Docelowa'))
-        })
+            'Grupa_Klienta': edited_df['👑 Grupa Klienta'],
+            'Cena_Docelowa': edited_df['💰 Nowa Cena']
+        }
         
-        # Batch update: set index to ID for efficient merge/update
-        updates = updates.set_index('ID')
+        updates_df = pd.DataFrame(updates_data).set_index('ID')
         
-        # Update session_state.df with batch operation (O(n) instead of O(n²))
-        for col in ['Grupa_Klienta', 'Cena_Docelowa']:
-            mask = session_state.df['ID'].isin(updates.index)
-            session_state.df.loc[mask, col] = session_state.df.loc[mask, 'ID'].map(
-                updates[col]
-            ).values
+        # Update session_state.df (oryginalne dane)
+        for idx in updates_df.index:
+            mask = session_state.df['ID'] == idx
+            if mask.any():
+                session_state.df.loc[mask, 'Grupa_Klienta'] = updates_df.loc[idx, 'Grupa_Klienta']
+                session_state.df.loc[mask, 'Cena_Docelowa'] = updates_df.loc[idx, 'Cena_Docelowa']
         
-        # ===== NOWE: Przelicz Wzrost na bazie nowej Cena_Docelowa =====
-        # Wzrost_Kwota = Cena_Docelowa - Cena_Faktyczna
-        # Nota: Cena_Faktyczna = Cena_Stara (bo już zawiera rabat!)
-        # Safety check - jeśli Cena_Faktyczna nie istnieje, utwórz z Cena_Stara
-        if 'Cena_Faktyczna' not in session_state.df.columns:
-            session_state.df['Cena_Faktyczna'] = session_state.df['Cena_Stara'].round(2)
-        
-        session_state.df['Wzrost_Kwota'] = (
-            session_state.df['Cena_Docelowa'] - session_state.df['Cena_Faktyczna']
-        ).round(2)
-        
-        # Wzrost_% (z rabatem) = (Cena_Docelowa - Cena_Faktyczna) / Cena_Faktyczna * 100
-        session_state.df['Wzrost_%_Od_Faktycznej'] = (
-            ((session_state.df['Cena_Docelowa'] - session_state.df['Cena_Faktyczna']) / 
-             session_state.df['Cena_Faktyczna'].replace(0, 1)) * 100
-        ).round(2)
-        
-        # Wzrost_% (gdyby brak rabatu) = (Cena_Docelowa - Cena_Stara) / Cena_Stara * 100
-        session_state.df['Wzrost_%_Bez_Rabatu'] = (
-            ((session_state.df['Cena_Docelowa'] - session_state.df['Cena_Stara']) / 
-             session_state.df['Cena_Stara'].replace(0, 1)) * 100
-        ).round(2)
-        
-        # Przelicz summary na bazie nowych danych
+        # Przelicz całe df_with_prices na bazie zmienionego session_state.df
         session_state.df_with_prices = calculate_new_prices(
-            session_state.df, 
+            session_state.df,
             session_state.pricing_df
         )
+        
+        # Przelicz summary
         session_state.summary = generate_summary(session_state.df_with_prices)
         
-        st.success("✅ Zmiany zatwierdzone! Wzrost i statystyki przeobliczone.")
-        st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano - statystyki w Unit 3 automatycznie się odświeżyły")
+        st.success("✅ Zmiany zatwierdzone! Statystyki przeobliczone.")
+        st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano")
         
         return True
         
@@ -162,14 +145,7 @@ def render_unit2_complete_section(df_with_prices):
     # Button to submit edits
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("✅ OK - ZATWIERDŹ WSZYSTKIE ZMIANY", type="primary", use_container_width=True):
+        if st.button("✅ OK - ZATWIERDŹ EDYCJE", type="primary", use_container_width=True, key="confirm_edits"):
             handle_price_editor_submission(edited_df, st.session_state)
     
     st.divider()
-    st.success("✅ Gotowe! Statystyki w Unit 3 powinny się zaktualizować.")
-    
-    # Debug info
-    with st.expander("🔧 Debug: Stan session_state"):
-        st.write(f"df shape: {st.session_state.df.shape if st.session_state.df is not None else 'None'}")
-        st.write(f"df_with_prices shape: {st.session_state.df_with_prices.shape if 'df_with_prices' in st.session_state and st.session_state.df_with_prices is not None else 'None'}")
-        st.write(f"summary keys: {list(st.session_state.summary.keys()) if 'summary' in st.session_state else 'None'}")
