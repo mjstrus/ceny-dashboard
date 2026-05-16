@@ -226,6 +226,7 @@ elif not st.session_state.step_3_done:
 
 else:
     st.success("✅ Edycje zatwierdzone")
+    st.info("📊 Statystyki w Kroku 4 się automatycznie przeliczą...")
     with st.expander("📋 Pokaż edytowane dane"):
         st.dataframe(st.session_state.df_with_prices, use_container_width=True, hide_index=True)
 
@@ -241,9 +242,9 @@ if not st.session_state.step_3_done:
     st.warning("⏳ Najpierw zatwierdź edycje w Kroku 3")
 
 else:
-    # Calculate summary if not done yet
-    if st.session_state.summary is None:
-        st.session_state.summary = generate_summary(st.session_state.df_with_prices)
+    # ZAWSZE przeliczyć summary na bazie current df_with_prices
+    # (jeśli User edytował w Unit 2, summary musi być nowy!)
+    st.session_state.summary = generate_summary(st.session_state.df_with_prices)
     
     summary = st.session_state.summary
     alerts = get_alerts(summary)
