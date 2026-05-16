@@ -189,6 +189,7 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
             'Cena Stara': 'Cena_Stara',
             'Grupa klienta': 'Grupa_Klienta',
             'Cena Nowa': 'Cena_Docelowa',
+            '% Rabatu': 'Procent_Rabatu',
             'Wzrost PLN': 'Wzrost_PLN',
             'Wzrost %': 'Wzrost_%_Od_Faktycznej',
         }
