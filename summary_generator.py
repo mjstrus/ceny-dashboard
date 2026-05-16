@@ -32,16 +32,17 @@ def generate_summary(df: pd.DataFrame) -> dict:
     
     # Normalizuj Grupa_Klienta (uppercase)
     if 'Grupa_Klienta' not in df.columns:
-        df['Grupa_Klienta'] = 'Standard'
-    df['Grupa_Klienta'] = df['Grupa_Klienta'].fillna('Standard').str.upper()
+        df['Grupa_Klienta'] = 'STANDARD'
+    df['Grupa_Klienta'] = df['Grupa_Klienta'].fillna('STANDARD').str.upper()
     
     # Segmentacja
     standard_df = df[df['Grupa_Klienta'] == 'STANDARD']
     vip_df = df[df['Grupa_Klienta'] == 'VIP']
+    indywidualna_df = df[df['Grupa_Klienta'] == 'INDYWIDUALNA']
     free_df = df[df['Grupa_Klienta'] == 'FREE']
     
-    # Metryki finansowe (bez FREE)
-    paying_df = pd.concat([standard_df, vip_df])
+    # Metryki finansowe (WSZYSCY oprócz FREE)
+    paying_df = pd.concat([standard_df, vip_df, indywidualna_df])
     
     przychod_przed = paying_df['Cena_Faktyczna'].sum()
     przychod_po = paying_df['Cena_Docelowa'].sum()
@@ -86,6 +87,7 @@ def generate_summary(df: pd.DataFrame) -> dict:
     
     summary = {
         'Liczba_Klientów_Standard': len(standard_df),
+        'Liczba_Klientów_Indywidualna': len(indywidualna_df),
         'Liczba_Klientów_VIP': len(vip_df),
         'Liczba_Klientów_FREE': len(free_df),
         'Liczba_Klientów_Razem': len(df),
