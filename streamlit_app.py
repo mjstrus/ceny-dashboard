@@ -353,8 +353,8 @@ else:
         'Status', 'Grupa_Klienta'
     ]].copy()
     
-    # Format kolumn
-    final_table.columns = ['ID', 'Nazwa', 'Typ', 'Cena Stara', 'Cena Bazowa', 'Cena Oferta', '% Rabatu', 
+    # Format kolumn - czytelne, krótkie nazwy
+    final_table.columns = ['ID', 'Nazwa', 'Typ', 'Cena Stara', 'Cena Bazowa', 'Cena Oferta', '%Rabatu', 
                           'Wzrost PLN', 'Wzrost %', 'Status', 'Grupa']
     
     st.dataframe(
@@ -362,12 +362,17 @@ else:
         use_container_width=True,
         hide_index=True,
         column_config={
-            'Cena Stara': st.column_config.NumberColumn(format='%.2f'),
-            'Cena Bazowa': st.column_config.NumberColumn(format='%.2f'),
-            'Cena Oferta': st.column_config.NumberColumn(format='%.2f'),
-            '% Rabatu': st.column_config.NumberColumn(format='%.2f'),
-            'Wzrost PLN': st.column_config.NumberColumn(format='%.2f'),
-            'Wzrost %': st.column_config.NumberColumn(format='%.2f'),
+            'ID': st.column_config.NumberColumn(width='small'),
+            'Nazwa': st.column_config.TextColumn(width='large'),
+            'Typ': st.column_config.TextColumn(width='small'),
+            'Cena Stara': st.column_config.NumberColumn(format='%.2f', width='medium'),
+            'Cena Bazowa': st.column_config.NumberColumn(format='%.2f', width='medium'),
+            'Cena Oferta': st.column_config.NumberColumn(format='%.2f', width='medium'),
+            '%Rabatu': st.column_config.NumberColumn(format='%.2f', width='small'),
+            'Wzrost PLN': st.column_config.NumberColumn(format='%.2f', width='medium'),
+            'Wzrost %': st.column_config.NumberColumn(format='%.2f', width='small'),
+            'Status': st.column_config.TextColumn(width='small'),
+            'Grupa': st.column_config.TextColumn(width='small'),
         }
     )
     
@@ -380,7 +385,21 @@ else:
             'ID', 'Nazwa', 'Grupa_Klienta', 'Cena_Faktyczna', 'Cena_Docelowa', 'Wzrost_Kwota'
         ]].copy()
         
-        st.dataframe(debug_df, use_container_width=True, hide_index=True)
+        debug_df.columns = ['ID', 'Nazwa', 'Grupa', 'Cena Płacona', 'Cena Nowa', 'Wzrost PLN']
+        
+        st.dataframe(
+            debug_df, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={
+                'ID': st.column_config.NumberColumn(width='small'),
+                'Nazwa': st.column_config.TextColumn(width='medium'),
+                'Grupa': st.column_config.TextColumn(width='small'),
+                'Cena Płacona': st.column_config.NumberColumn(format='%.2f', width='small'),
+                'Cena Nowa': st.column_config.NumberColumn(format='%.2f', width='small'),
+                'Wzrost PLN': st.column_config.NumberColumn(format='%.2f', width='small'),
+            }
+        )
         
         st.write("**Ręczna weryfikacja:**")
         
