@@ -225,19 +225,22 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     df['Cena_Range'] = df['Doc_Avg'].apply(map_docs_to_range)
     
     # Oblicz ceny UNIFIED FUNCTION - ale RESPEKTUJ edycje User'a!
-    # Jeśli User edytował Cena_Docelowa (nie jest NaN/None), nie nadpisuj!
-    df['Cena_Docelowa_Calculated'] = df.apply(
+    # BAZOWA cena z cennika (nie zmienia się!)
+    df['Cena_Docelowa_Bazowa'] = df.apply(
         lambda row: calculate_price_with_packages(
             row['Typ_Umowy'],
             row['VAT'],
             row['Doc_Avg'],
             pricing_df
-        ) or row['Cena_Stara'],  # Fallback to Cena_Stara if calculation fails
+        ) or row['Cena_Stara'],
         axis=1
     )
     
+    # Jeśli User edytował Cena_Docelowa (nie jest NaN/None), nie nadpisuj!
+    df['Cena_Docelowa_Calculated'] = df['Cena_Docelowa_Bazowa'].copy()
+    
     # Jeśli Cena_Docelowa istnieje i nie jest NaN - użyj edytowaną
-    # Inaczej użyj obliczoną z cennika
+    # Inaczej użyj bazową z cennika
     if 'Cena_Docelowa' not in df.columns:
         df['Cena_Docelowa'] = df['Cena_Docelowa_Calculated']
     else:
@@ -250,6 +253,13 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     
     # FAKTYCZNA: co faktycznie płacili (Cena_Stara już zawiera rabat!)
     df['Cena_Faktyczna'] = df['Cena_Stara'].round(2)
+    
+    # % RABATU: względem ceny bazowej z cennika
+    # Wzór: ((Cena_Docelowa_Bazowa - Cena_Docelowa) / Cena_Docelowa_Bazowa) * 100
+    df['Procent_Rabatu'] = (
+        ((df['Cena_Docelowa_Bazowa'] - df['Cena_Docelowa']) / 
+         df['Cena_Docelowa_Bazowa'].replace(0, 1)) * 100
+    ).round(2)
     
     # WZROST: od faktycznej ceny
     def calculate_wzrost(row):
