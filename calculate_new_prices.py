@@ -224,8 +224,9 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
     # Mapuj dokumenty na grupy widełk
     df['Cena_Range'] = df['Doc_Avg'].apply(map_docs_to_range)
     
-    # Oblicz ceny UNIFIED FUNCTION - jedną zamiast 3 funkcji
-    df['Cena_Docelowa'] = df.apply(
+    # Oblicz ceny UNIFIED FUNCTION - ale RESPEKTUJ edycje User'a!
+    # Jeśli User edytował Cena_Docelowa (nie jest NaN/None), nie nadpisuj!
+    df['Cena_Docelowa_Calculated'] = df.apply(
         lambda row: calculate_price_with_packages(
             row['Typ_Umowy'],
             row['VAT'],
@@ -234,6 +235,18 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
         ) or row['Cena_Stara'],  # Fallback to Cena_Stara if calculation fails
         axis=1
     )
+    
+    # Jeśli Cena_Docelowa istnieje i nie jest NaN - użyj edytowaną
+    # Inaczej użyj obliczoną z cennika
+    if 'Cena_Docelowa' not in df.columns:
+        df['Cena_Docelowa'] = df['Cena_Docelowa_Calculated']
+    else:
+        # Zachowaj edytowane ceny, oblicz dla tych które są NaN/0
+        mask = (df['Cena_Docelowa'].isna()) | (df['Cena_Docelowa'] == 0)
+        df.loc[mask, 'Cena_Docelowa'] = df.loc[mask, 'Cena_Docelowa_Calculated']
+    
+    # Usuń kolumnę tymczasową
+    df = df.drop('Cena_Docelowa_Calculated', axis=1)
     
     # FAKTYCZNA: co faktycznie płacili (Cena_Stara już zawiera rabat!)
     df['Cena_Faktyczna'] = df['Cena_Stara'].round(2)
