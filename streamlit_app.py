@@ -348,12 +348,14 @@ else:
     st.subheader("📋 Finalna Tabela (do Raportu)")
     
     final_table = st.session_state.df_with_prices[[
-        'ID', 'Nazwa', 'Typ_Umowy', 'Cena_Stara', 'Cena_Docelowa', 
-        'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Status', 'Grupa_Klienta'
+        'ID', 'Nazwa', 'Typ_Umowy', 'Cena_Stara', 'Cena_Docelowa_Bazowa', 
+        'Cena_Docelowa', 'Procent_Rabatu', 'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 
+        'Status', 'Grupa_Klienta'
     ]].copy()
     
     # Format kolumn
-    final_table.columns = ['ID', 'Nazwa', 'Typ', 'Cena Stara', 'Cena Nowa', 'Wzrost PLN', 'Wzrost %', 'Status', 'Grupa']
+    final_table.columns = ['ID', 'Nazwa', 'Typ', 'Cena Stara', 'Cena Bazowa', 'Cena Oferta', '% Rabatu', 
+                          'Wzrost PLN', 'Wzrost %', 'Status', 'Grupa']
     
     st.dataframe(
         final_table,
@@ -361,7 +363,9 @@ else:
         hide_index=True,
         column_config={
             'Cena Stara': st.column_config.NumberColumn(format='%.2f'),
-            'Cena Nowa': st.column_config.NumberColumn(format='%.2f'),
+            'Cena Bazowa': st.column_config.NumberColumn(format='%.2f'),
+            'Cena Oferta': st.column_config.NumberColumn(format='%.2f'),
+            '% Rabatu': st.column_config.NumberColumn(format='%.2f'),
             'Wzrost PLN': st.column_config.NumberColumn(format='%.2f'),
             'Wzrost %': st.column_config.NumberColumn(format='%.2f'),
         }
