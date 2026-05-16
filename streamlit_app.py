@@ -351,6 +351,33 @@ else:
         use_container_width=True,
         hide_index=True
     )
+    
+    # DEBUG PANEL
+    with st.expander("🔧 DEBUG: Weryfikacja Obliczeń"):
+        st.write("**Dane które są sumowane:**")
+        
+        # Pokaż co idzie do summary
+        debug_df = st.session_state.df_with_prices[[
+            'ID', 'Nazwa', 'Grupa_Klienta', 'Cena_Faktyczna', 'Cena_Docelowa', 'Wzrost_Kwota'
+        ]].copy()
+        
+        st.dataframe(debug_df, use_container_width=True, hide_index=True)
+        
+        st.write("**Ręczna weryfikacja:**")
+        
+        # Pokaż sumy
+        paying = debug_df[debug_df['Grupa_Klienta'] != 'FREE']
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Suma Cena_Faktyczna", f"{paying['Cena_Faktyczna'].sum():,.2f} PLN")
+        with col2:
+            st.metric("Suma Cena_Docelowa", f"{paying['Cena_Docelowa'].sum():,.2f} PLN")
+        with col3:
+            st.metric("Różnica (Wzrost)", f"{(paying['Cena_Docelowa'].sum() - paying['Cena_Faktyczna'].sum()):,.2f} PLN")
+        
+        st.write(f"**Liczba wierszy (bez FREE):** {len(paying)}")
+        st.write(f"**Liczba wierszy (wszystkie):** {len(debug_df)}")
 
 
 # ============================================================================
