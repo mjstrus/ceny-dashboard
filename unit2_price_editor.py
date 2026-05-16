@@ -122,7 +122,8 @@ def handle_price_editor_submission(edited_df, session_state):
         st.success("✅ Zmiany zatwierdzone! Statystyki przeobliczone.")
         st.info(f"ℹ️ {len(edited_df)} klientów zaktualizowano")
         
-        return True
+        # Odśwież stronę - Unit 4 musi przeczytać nowy summary!
+        st.rerun()
         
     except Exception as e:
         st.error(f"❌ Błąd podczas aktualizacji: {str(e)}")
