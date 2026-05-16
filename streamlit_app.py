@@ -1,235 +1,256 @@
 """
-Ceny Dashboard - UNIT 0 + UNIT 1 + UNIT 2
-Unit 0: Zarządzanie cennikiem
-Unit 1: Import danych klientów
-Unit 2: Edycja cen
+CENY DASHBOARD - 5-Step Milestone Architecture
+Marcin's requested flow: Cennik → Excel → Edycje → Statystyki → Raport
 """
 
 import streamlit as st
 import pandas as pd
-import os
+from io import BytesIO
+
+# ============================================================================
+# CONFIG & IMPORTS
+# ============================================================================
+
+st.set_page_config(page_title="Ceny Dashboard", layout="wide")
+
+from price_manager import get_default_pricing, apply_global_modification
 from data_loader import load_excel_file, get_display_dataframe
-from calculate_new_prices import calculate_new_prices, get_price_table
-from price_manager import get_default_pricing, apply_global_modification, apply_global_all_modification, get_pricing_summary
+from calculate_new_prices import calculate_new_prices
+from summary_generator import generate_summary, get_alerts
+from unit2_price_editor import render_unit2_editor, handle_price_editor_submission
+from pdf_reporter import create_summary_report
+
+NAVY = "#1B2A4A"
 
 # ============================================================================
-# PAGE CONFIG
+# SESSION STATE INITIALIZATION
 # ============================================================================
 
-st.set_page_config(
-    page_title="Ceny Dashboard",
-    page_icon="💰",
-    layout="wide"
-)
+if 'step_1_done' not in st.session_state:
+    st.session_state.step_1_done = False  # Cennik zatwierdzon
 
-st.title("💰 Dashboard Zarządzania Cennikiem")
-st.markdown("Abacus Centrum | Zatwierdzenie → Wczytywanie → Statystyka → Edycja")
+if 'step_2_done' not in st.session_state:
+    st.session_state.step_2_done = False  # Excel wczytany
 
-# ============================================================================
-# SESSION STATE
-# ============================================================================
+if 'step_3_done' not in st.session_state:
+    st.session_state.step_3_done = False  # Edycje zatwierdzone
+
+if 'step_4_done' not in st.session_state:
+    st.session_state.step_4_done = False  # Statystyki obliczone
 
 if 'pricing_df' not in st.session_state:
-    st.session_state.pricing_df = get_default_pricing()
+    st.session_state.pricing_df = None
 
 if 'df' not in st.session_state:
     st.session_state.df = None
 
-# ============================================================================
-# UNIT 0: ZARZĄDZANIE CENNIKIEM
-# ============================================================================
+if 'df_with_prices' not in st.session_state:
+    st.session_state.df_with_prices = None
 
-st.header("📋 Zatwierdzenie cennika")
+if 'summary' not in st.session_state:
+    st.session_state.summary = None
 
-st.info(get_pricing_summary(st.session_state.pricing_df))
-
-# Edytowalna tabela cennnika
-st.subheader("Edytuj cennik poniżej")
-
-edited_pricing = st.data_editor(
-    st.session_state.pricing_df,
-    use_container_width=True,
-    hide_index=True,
-    key="pricing_editor",
-    column_config={
-        "Typ": st.column_config.SelectboxColumn(
-            "Typ",
-            options=["KH", "KPIR", "Ryczałt"],
-            required=True
-        ),
-        "VAT": st.column_config.SelectboxColumn(
-            "VAT",
-            options=["tak", "nie"],
-            required=True
-        ),
-        "1-10": st.column_config.NumberColumn("1-10", step=1.0, format="%.2f"),
-        "11-20": st.column_config.NumberColumn("11-20", step=1.0, format="%.2f"),
-        "21-50": st.column_config.NumberColumn("21-50", step=1.0, format="%.2f"),
-        "51-100": st.column_config.NumberColumn("51-100", step=1.0, format="%.2f"),
-        "Paczka 25 (100+)": st.column_config.NumberColumn("Paczka 25", step=1.0, format="%.2f"),
-    }
-)
-
-# Modyfikacje globalne
-st.subheader("⚙️ Modyfikacje Globalne")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("**Zmień całą kategorię**")
-    mod_typ = st.selectbox("Typ", ["KH", "KPIR", "Ryczałt"], key="mod_typ")
-    mod_vat = st.selectbox("VAT", ["tak", "nie"], key="mod_vat")
-    mod_percent = st.number_input("Zmiana %", value=0.0, step=1.0, key="mod_percent")
-    
-    if st.button("OK Zastosuj dla tej kategorii"):
-        edited_pricing = apply_global_modification(edited_pricing, mod_typ, mod_vat, mod_percent)
-        st.success(f"OK {mod_typ} {mod_vat}: {mod_percent:+.1f}%")
-
-with col2:
-    st.markdown("**Zmień wszystko**")
-    all_percent = st.number_input("Zmiana % dla WSZYSTKIEGO", value=0.0, step=1.0, key="all_percent")
-    
-    if st.button("OK Zastosuj dla całego cennnika"):
-        edited_pricing = apply_global_all_modification(edited_pricing, all_percent)
-        st.success(f"OK Całość: {all_percent:+.1f}%")
-
-with col3:
-    st.markdown("**Reset**")
-    if st.button("🔄 Przywróć domyślny cennik"):
-        edited_pricing = get_default_pricing()
-        st.success("OK Cennik przywrócony")
 
 # ============================================================================
-# BUTTON: ZATWIERDŹ CENNIK
+# HEADER
 # ============================================================================
 
-st.divider()
+st.markdown(f"""
+<div style="background: linear-gradient(to right, {NAVY}, #0d1b2a); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+    <h1 style="color: white; margin: 0;">💰 Ceny Dashboard - Abacus Centrum</h1>
+    <p style="color: #E8A000; margin: 0; margin-top: 10px;">5-Step Pricing Workflow</p>
+</div>
+""", unsafe_allow_html=True)
 
-if st.button("✅ ZATWIERDŹ CENNIK I PRZEJDŹ DO KLIENTÓW", type="primary", use_container_width=True):
-    st.session_state.pricing_df = edited_pricing
-    st.success("OK Cennik zatwierddzony! Przejdź do Unit 1")
+# Progress indicator
+progress_cols = st.columns(5)
+steps = [
+    ("1️⃣", "Cennik", st.session_state.step_1_done),
+    ("2️⃣", "Excel", st.session_state.step_2_done),
+    ("3️⃣", "Edycje", st.session_state.step_3_done),
+    ("4️⃣", "Statystyki", st.session_state.step_4_done),
+    ("5️⃣", "Raport", False),
+]
 
-st.divider()
-
-# ============================================================================
-# UNIT 1: WCZYTANIE DANYCH KLIENTÓW
-# ============================================================================
-
-st.header("📥 Wczytywanie danych klientów")
-
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    st.markdown("**Wczytaj plik Excel z danymi klientów:**")
-
-with col2:
-    if st.button("🔄 Odśwież"):
-        st.session_state.df = None
-        st.rerun()
-
-# Wczytaj dane
-uploaded_file = st.file_uploader("Wybierz .xlsx", type=['xlsx'])
-if uploaded_file is not None:
-    import tempfile
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-        tmp.write(uploaded_file.getbuffer())
-        tmp_path = tmp.name
-    
-    df, errors = load_excel_file(tmp_path)
-    try:
-        os.unlink(tmp_path)
-    except:
-        pass
-    
-    # Rozdziel krytyczne błędy od warnings
-    critical_errors = [e for e in errors if e.startswith('[ERROR]')]
-    warnings = [e for e in errors if e.startswith('[WARN]')]
-    
-    # Pokaż warnings (nie blokują)
-    for w in warnings:
-        st.warning(w)
-    
-    # Blokuj tylko na krytyczne błędy
-    if critical_errors:
-        for err in critical_errors:
-            st.error(err)
-    else:
-        # Brak błędów krytycznych - wczytaj dane
-        if df is not None:
-            st.session_state.df = df
-            st.success(f"OK Wczytano {len(df)} klientow")
+for i, (emoji, label, done) in enumerate(steps):
+    with progress_cols[i]:
+        if done:
+            st.success(f"{emoji} {label}")
         else:
-            st.error("Blad: nie udalo sie wczytac danych")
+            st.info(f"{emoji} {label}")
+
 
 # ============================================================================
-# POKAZ DANE
+# KROK 1: CENNIK
 # ============================================================================
 
-if st.session_state.df is not None:
-    st.divider()
+st.divider()
+st.markdown("## KROK 1: Zatwierdzenie Cennika")
+
+if not st.session_state.step_1_done:
+    st.info("**Przejrzyj i zatwierdź nowy cennik 2026**")
     
-    st.subheader("📊 Wczytane Dane")
+    # Load default pricing
+    pricing_df = get_default_pricing()
+    st.session_state.pricing_df = pricing_df
     
-    # Metryki
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Liczba klientów", len(st.session_state.df))
+    # Display pricing table
+    st.subheader("Nowy Cennik 2026")
+    st.dataframe(
+        pricing_df,
+        use_container_width=True,
+        hide_index=True
+    )
+    
+    # Button to confirm
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        avg_price = st.session_state.df['Cena_Stara'].mean()
-        st.metric("Śr. cena (cennik)", f"{avg_price:.0f} PLN")
-    with col3:
-        avg_doc = st.session_state.df['Doc_Avg'].mean()
-        st.metric("Śr. dokumentów/mc", f"{avg_doc:.1f}")
+        if st.button("✅ OK - CENNIK ZATWIERDZON", type="primary", use_container_width=True, key="step1"):
+            st.session_state.step_1_done = True
+            st.success("✅ Cennik zatwierdzon! Przejdź do Kroku 2.")
+            st.rerun()
+
+else:
+    st.success("✅ Cennik zatwierdzon")
+    with st.expander("📋 Pokaż cennik"):
+        st.dataframe(st.session_state.pricing_df, use_container_width=True, hide_index=True)
+
+
+# ============================================================================
+# KROK 2: WGRYWANIE EXCELA
+# ============================================================================
+
+st.divider()
+st.markdown("## KROK 2: Wgrywanie Danych (Excel)")
+
+if not st.session_state.step_1_done:
+    st.warning("⏳ Najpierw zatwierdź cennik w Kroku 1")
+
+elif not st.session_state.step_2_done:
+    st.info("**Wgraj plik Excel z danymi klientów**")
     
-    # Tabela wczytanych danych
-    df_display = get_display_dataframe(st.session_state.df)
-    st.dataframe(df_display, use_container_width=True, hide_index=True)
+    uploaded_file = st.file_uploader("Wybierz plik Excel", type="xlsx")
     
-    # ====================================================================
-    # OBLICZ CENY (dla Unit 3 i Unit 2)
-    # ====================================================================
+    if uploaded_file is not None:
+        try:
+            # Load data
+            with st.spinner("Wczytywanie..."):
+                df, errors = load_excel_file(uploaded_file)
+            
+            # Show errors if any
+            if errors:
+                st.error("❌ Błędy w danych:")
+                for error in errors:
+                    st.error(f"  • {error}")
+            else:
+                st.success(f"✅ Załadowano {len(df)} klientów")
+                st.session_state.df = df
+                
+                # Show preview
+                st.subheader("Podgląd danych")
+                st.dataframe(df.head(10), use_container_width=True, hide_index=True)
+                
+                # Button to confirm
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button("✅ OK - DANE WCZYTANE", type="primary", use_container_width=True, key="step2"):
+                        st.session_state.step_2_done = True
+                        # Calculate prices immediately
+                        st.session_state.df_with_prices = calculate_new_prices(
+                            st.session_state.df,
+                            st.session_state.pricing_df
+                        )
+                        st.success("✅ Dane wczytane! Przejdź do Kroku 3.")
+                        st.rerun()
+        
+        except Exception as e:
+            st.error(f"❌ Błąd przy wczytywaniu: {str(e)}")
+
+else:
+    st.success("✅ Dane wczytane")
+    st.write(f"**{len(st.session_state.df)} klientów załadowanych**")
+    with st.expander("📋 Pokaż dane"):
+        st.dataframe(st.session_state.df, use_container_width=True, hide_index=True)
+
+
+# ============================================================================
+# KROK 3: EDYCJE DANYCH
+# ============================================================================
+
+st.divider()
+st.markdown("## KROK 3: Edycja Danych")
+
+if not st.session_state.step_2_done:
+    st.warning("⏳ Najpierw wgraj dane w Kroku 2")
+
+elif not st.session_state.step_3_done:
+    st.info("**Edytuj dane klientów jeśli trzeba**")
     
-    # Inicjalizuj session_state.df_with_prices jeśli nie istnieje
-    if 'df_with_prices' not in st.session_state or st.session_state.df_with_prices is None:
-        st.session_state.df_with_prices = calculate_new_prices(st.session_state.df, st.session_state.pricing_df)
+    # Render editor
+    edited_df = render_unit2_editor(st.session_state.df_with_prices)
     
-    # ZAWSZE używaj session_state jako source of truth
-    df_with_prices = st.session_state.df_with_prices
+    # Button to confirm edits
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("✅ OK - ZMIANY ZATWIERDZONE", type="primary", use_container_width=True, key="step3"):
+            # Handle submission
+            try:
+                # Extract edits
+                updates = pd.DataFrame({
+                    'ID': edited_df['ID'],
+                    'Grupa_Klienta': edited_df.get('👑 Grupa Klienta', edited_df.get('Grupa_Klienta')),
+                    'Cena_Docelowa': edited_df.get('💰 Nowa Cena', edited_df.get('Cena_Docelowa'))
+                })
+                
+                updates = updates.set_index('ID')
+                
+                # Batch update
+                for col in ['Grupa_Klienta', 'Cena_Docelowa']:
+                    mask = st.session_state.df['ID'].isin(updates.index)
+                    st.session_state.df.loc[mask, col] = st.session_state.df.loc[mask, 'ID'].map(
+                        updates[col]
+                    ).values
+                
+                # Recalculate prices with new data
+                st.session_state.df_with_prices = calculate_new_prices(
+                    st.session_state.df,
+                    st.session_state.pricing_df
+                )
+                
+                st.session_state.step_3_done = True
+                st.success(f"✅ {len(edited_df)} klientów zaktualizowano! Przejdź do Kroku 4.")
+                st.rerun()
+            
+            except Exception as e:
+                st.error(f"❌ Błąd: {str(e)}")
+
+else:
+    st.success("✅ Edycje zatwierdzone")
+    with st.expander("📋 Pokaż edytowane dane"):
+        st.dataframe(st.session_state.df_with_prices, use_container_width=True, hide_index=True)
+
+
+# ============================================================================
+# KROK 4: STATYSTYKI & RAPORT
+# ============================================================================
+
+st.divider()
+st.markdown("## KROK 4: Statystyki & Raport")
+
+if not st.session_state.step_3_done:
+    st.warning("⏳ Najpierw zatwierdź edycje w Kroku 3")
+
+else:
+    # Calculate summary if not done yet
+    if st.session_state.summary is None:
+        st.session_state.summary = generate_summary(st.session_state.df_with_prices)
     
-    # To samo dla summary - inicjalizuj jeśli nie istnieje
-    if 'summary' not in st.session_state or st.session_state.summary is None:
-        from summary_generator import generate_summary
-        st.session_state.summary = generate_summary(df_with_prices)
-    
-    
-    # ====================================================================
-    # UNIT 2: EDYCJA CEN (EDYTOWALNA TABELA)
-    # ====================================================================
-    
-    st.divider()
-    st.header("💵 Edycja cen klientów")
-    
-    from unit2_price_editor import render_unit2_complete_section
-    render_unit2_complete_section(df_with_prices)
-    
-    
-    # ====================================================================
-    # UNIT 3: PODSUMOWANIE (SUMMARY DASHBOARD)
-    # ====================================================================
-    
-    st.divider()
-    st.header("📊 Statystyka wgranej listy klientów")
-    
-    import plotly.graph_objects as go
-    import plotly.express as px
-    
-    # NOWE: Czytaj summary DYNAMICZNIE (zawsze aktualny z session_state)
-    from summary_generator import get_alerts
-    summary = st.session_state.summary  # ← Teraz czyta ZAWSZE aktualny summary
+    summary = st.session_state.summary
     alerts = get_alerts(summary)
     
+    # Display metrics
+    st.subheader("📊 Metryki Główne")
     
-    # Karty metryczne
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -241,175 +262,103 @@ if st.session_state.df is not None:
     
     with col2:
         st.metric(
-            "VIP",
-            summary.get('Liczba_Klientów_VIP', 0),
-            f"FREE: {summary.get('Liczba_Klientów_FREE', 0)}"
-        )
-    
-    with col3:
-        st.metric(
-            "Średnia Docs/Klient",
-            f"{summary.get('Srednia_Doc_Klienta', 0):.1f}",
-            f"Cena przed: {summary.get('Srednia_Cena_Przed', 0):.0f} PLN"
-        )
-    
-    with col4:
-        st.metric(
-            "Średnia Cena Po",
-            f"{summary.get('Srednia_Cena_Po', 0):.0f} PLN",
-            f"Wzrost: {summary.get('Wzrost_PCT', 0):.1f}%"
-        )
-    
-    # Dokumenty
-    st.subheader("📄 Dokumenty")
-    col_docs = st.columns(1)[0]
-    with col_docs:
-        st.metric(
-            "Łączna Ilość Dokumentów (wszystkich klientów)",
-            f"{summary.get('Total_Dokumentow', 0):.0f}",
-            f"Średnia: {summary.get('Srednia_Doc_Klienta', 0):.1f} doc/klient"
-        )
-    
-    # Finansowe
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric(
             "Przychód PRZED (mc)",
             f"{summary.get('Przychod_Przed_PLN', 0):,.0f} PLN",
             f"Rocznie: {summary.get('Roczny_Przed_PLN', 0):,.0f} PLN"
         )
     
-    with col2:
+    with col3:
         st.metric(
             "Przychód PO (mc)",
             f"{summary.get('Przychod_Po_PLN', 0):,.0f} PLN",
             f"Rocznie: {summary.get('Roczny_Po_PLN', 0):,.0f} PLN"
         )
     
-    with col3:
+    with col4:
         st.metric(
             "Wzrost (mc)",
             f"+{summary.get('Wzrost_PLN', 0):,.0f} PLN",
             f"Roczny impact: +{summary.get('Roczny_Wzrost_PLN', 0):,.0f} PLN"
         )
     
-    st.subheader("Segmentacja Klientów po Kolorach")
-    col1, col2, col3, col4 = st.columns(4)
+    # Segmentacja
+    st.subheader("🎯 Segmentacja Klientów")
     
-    with col1:
+    seg_col1, seg_col2, seg_col3, seg_col4 = st.columns(4)
+    
+    with seg_col1:
         st.metric(
-            "🟢 Zielony (OK)",
+            "🟢 Zielony",
             summary.get('Zielony_Cnt', 0),
-            "Wzrost ≤10%"
+            "Wzrost ≤10% (OK)"
         )
     
-    with col2:
+    with seg_col2:
         st.metric(
             "🟡 Żółty",
             summary.get('Zolty_Cnt', 0),
             "Wzrost 10-20%"
         )
     
-    with col3:
+    with seg_col3:
         st.metric(
-            "🔴 Czerwony (z rabatem)",
+            "🔴 Czerwony",
             summary.get('Czerwony_Cnt', 0),
-            "Wzrost >20% ale mieli rabat"
+            "Wzrost >20% z rabatem"
         )
     
-    with col4:
+    with seg_col4:
         st.metric(
             "⚫ Czarny (RYZYKO!)",
             summary.get('Czarny_Cnt', 0),
             "Wzrost >20% bez rabatu"
         )
     
-    # WYKRESY
-    st.subheader("📈 Wykresy")
-    
-    col1, col2 = st.columns(2)
-    
-    # Wykres 1: Segmentacja (Pie)
-    with col1:
-        import plotly.graph_objects as go
-        
-        segments = [summary.get('Zielony_Cnt', 0), summary.get('Zolty_Cnt', 0), summary.get('Czerwony_Cnt', 0), summary.get('Czarny_Cnt', 0)]
-        labels = ['🟢 Zielony', '🟡 Żółty', '🔴 Czerwony', '⚫ Czarny']
-        colors_chart = ['#22c55e', '#eab308', '#f97316', '#1f2937']  # Green, Amber, Orange, Black
-        
-        fig_seg = go.Figure(data=[go.Pie(labels=labels, values=segments, marker=dict(colors=colors_chart))])
-        fig_seg.update_layout(title="Segmentacja Klientów", height=400)
-        st.plotly_chart(fig_seg, use_container_width=True)
-    
-    # Wykres 2: Przychód PRZED vs PO
-    with col2:
-        fig_rev = go.Figure(data=[
-            go.Bar(name='PRZED', x=['Miesięczny', 'Roczny'], y=[summary.get('Przychod_Przed_PLN', 0), summary.get('Roczny_Przed_PLN', 0)], marker_color='#1B2A4A'),
-            go.Bar(name='PO', x=['Miesięczny', 'Roczny'], y=[summary.get('Przychod_Po_PLN', 0), summary.get('Roczny_Po_PLN', 0)], marker_color='#E8A000')
-        ])
-        fig_rev.update_layout(title="Przychód PRZED vs PO", barmode='group', height=400, yaxis_title="PLN")
-        st.plotly_chart(fig_rev, use_container_width=True)
-    
-    # Wykres 3: CZARNY vs CZERWONY — porównanie ryzyka
-    if summary.get('Czarny_Cnt', 0) > 0 or summary.get('Czerwony_Cnt', 0) > 0:
-        st.subheader("⚫🔴 Porównanie: CZARNY (Ryzyko) vs CZERWONY (Uzasadnione)")
-        col_risk = st.columns(1)[0]
-        with col_risk:
-            risk_labels = [f"⚫ Czarny\n(RYZYKO)\n({summary.get('Czarny_Cnt', 0)})", 
-                          f"🔴 Czerwony\n(z rabatem)\n({summary.get('Czerwony_Cnt', 0)})"]
-            risk_values = [summary.get('Czarny_Cnt', 0), summary.get('Czerwony_Cnt', 0)]
-            risk_colors = ['#1f2937', '#f97316']  # Black, Orange
-            
-            fig_risk = go.Figure(data=[go.Pie(labels=risk_labels, values=risk_values, marker=dict(colors=risk_colors))])
-            fig_risk.update_layout(title="Rozkład: Rzeczywiste Ryzyko vs Uzasadnione Wzrosty", height=400)
-            st.plotly_chart(fig_risk, use_container_width=True)
-    
-    # EKSPORT PDF
-    st.subheader("📥 Eksport Raportu")
-    
-    col_export = st.columns(1)[0]
-    with col_export:
-        if st.button("📄 Generuj i Pobierz PDF", type="primary", use_container_width=True):
-            from pdf_reporter import create_summary_report
-            
-            pdf_bytes = create_summary_report(summary, df_with_prices)
-            
-            st.download_button(
-                label="⬇️ Pobierz PDF",
-                data=pdf_bytes,
-                file_name=f"Statystyka_Klientów_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-    
-    st.divider()
-    
-    # Alerty/Sugestie
+    # Alerts
     if alerts:
-        st.subheader("🎯 Sugestie & Alerty")
+        st.subheader("⚠️ Alerty")
         for alert in alerts:
-            if alert.startswith("[WARN]"):
-                st.warning(alert)
-            elif alert.startswith("💡"):
-                st.info(alert)
-            elif alert.startswith("🎁"):
-                st.success(alert)
-            elif alert.startswith("📈"):
-                st.info(alert)
-            elif alert.startswith("💰"):
-                st.success(alert)
-            elif alert.startswith("👑"):
-                st.info(alert)
-            else:
-                st.write(alert)
+            st.warning(alert)
+    
+    # Button to download report
+    st.subheader("📥 Pobierz Raport")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("✅ POBIERZ PDF RAPORT", type="primary", use_container_width=True, key="step4"):
+            try:
+                with st.spinner("Generowanie PDF..."):
+                    pdf_bytes = create_summary_report(summary, st.session_state.df_with_prices)
+                
+                st.download_button(
+                    label="📥 Kliknij aby pobrać PDF",
+                    data=pdf_bytes,
+                    file_name=f"Statystyka_Klientów_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    mime="application/pdf",
+                    key="download_report"
+                )
+                st.success("✅ Raport gotowy do pobrania!")
+                st.session_state.step_4_done = True
+            
+            except Exception as e:
+                st.error(f"❌ Błąd przy generowaniu PDF: {str(e)}")
+    
+    # Display table with all data
+    st.subheader("📋 Pełna Tabela Danych")
+    st.dataframe(
+        st.session_state.df_with_prices,
+        use_container_width=True,
+        hide_index=True
+    )
 
-else:
-    st.warning("📥 Wczytaj plik Excel aby kontynuować")
 
-# ====================================================================
+# ============================================================================
 # FOOTER
-# ====================================================================
+# ============================================================================
 
 st.divider()
-st.markdown("**Ceny Dashboard v3.0** | Abacus Centrum | Zatwierdzenie → Wczytywanie → Edycja → Statystyka")
+st.markdown("""
+---
+**Abacus Centrum Księgowe** | Puławy
+📧 Kontakt: info@abacus24.pl
+""")
