@@ -30,13 +30,13 @@ def generate_summary(df: pd.DataFrame) -> dict:
     df['Wzrost_%_Od_Faktycznej'] = pd.to_numeric(df['Wzrost_%_Od_Faktycznej'], errors='coerce').fillna(0)
     df['Miał_Rabat_10%'] = pd.to_numeric(df['Miał_Rabat_10%'], errors='coerce').fillna(0).astype(int)
     
-    # Normalizuj Grupa_Klienta
+    # Normalizuj Grupa_Klienta (uppercase)
     if 'Grupa_Klienta' not in df.columns:
         df['Grupa_Klienta'] = 'Standard'
-    df['Grupa_Klienta'] = df['Grupa_Klienta'].fillna('Standard')
+    df['Grupa_Klienta'] = df['Grupa_Klienta'].fillna('Standard').str.upper()
     
     # Segmentacja
-    standard_df = df[df['Grupa_Klienta'] == 'Standard']
+    standard_df = df[df['Grupa_Klienta'] == 'STANDARD']
     vip_df = df[df['Grupa_Klienta'] == 'VIP']
     free_df = df[df['Grupa_Klienta'] == 'FREE']
     
