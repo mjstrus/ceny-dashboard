@@ -258,7 +258,7 @@ else:
         st.metric(
             "Liczba Klientów",
             summary.get('Liczba_Klientów_Razem', 0),
-            f"Standard: {summary.get('Liczba_Klientów_Standard', 0)}"
+            f"Standard: {summary.get('Liczba_Klientów_Standard', 0)} | Indywidualna: {summary.get('Liczba_Klientów_Indywidualna', 0)}"
         )
     
     with col2:
