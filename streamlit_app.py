@@ -344,12 +344,27 @@ else:
             except Exception as e:
                 st.error(f"❌ Błąd przy generowaniu PDF: {str(e)}")
     
-    # Display table with all data
-    st.subheader("📋 Pełna Tabela Danych")
+    # Display FINAL table - ready for report
+    st.subheader("📋 Finalna Tabela (do Raportu)")
+    
+    final_table = st.session_state.df_with_prices[[
+        'ID', 'Nazwa', 'Typ_Umowy', 'Cena_Stara', 'Cena_Docelowa', 
+        'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Status', 'Grupa_Klienta'
+    ]].copy()
+    
+    # Format kolumn
+    final_table.columns = ['ID', 'Nazwa', 'Typ', 'Cena Stara', 'Cena Nowa', 'Wzrost PLN', 'Wzrost %', 'Status', 'Grupa']
+    
     st.dataframe(
-        st.session_state.df_with_prices,
+        final_table,
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={
+            'Cena Stara': st.column_config.NumberColumn(format='%.2f'),
+            'Cena Nowa': st.column_config.NumberColumn(format='%.2f'),
+            'Wzrost PLN': st.column_config.NumberColumn(format='%.2f'),
+            'Wzrost %': st.column_config.NumberColumn(format='%.2f'),
+        }
     )
     
     # DEBUG PANEL
