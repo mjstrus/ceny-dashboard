@@ -286,40 +286,39 @@ def calculate_new_prices(df: pd.DataFrame, pricing_df: pd.DataFrame = None) -> p
 def get_price_table(df: pd.DataFrame) -> pd.DataFrame:
     """
     Przygotuj tabelę do edycji w Unit 2 (st.data_editor).
+    TYLKO kolumny do edycji - uproszczone!
     """
     
-    # Dodaj kolumnę "Sugerowany rabat" — 20 PLN dla CZARNYCH (ryzyko)
-    df['Sugerowany_Rabat'] = df['Status'].apply(
-        lambda x: 20.0 if x == 'Czarny' else 0.0
-    )
+    # Uproszczony zbiór kolumn - TYLKO TO CO ISTNIEJE
+    display_cols = ['ID', 'Nazwa', 'Typ_Umowy', 'Status', 'Cena_Range', 
+                    'Cena_Stara', 'Grupa_Klienta', 'Cena_Docelowa']
     
-    display_cols = ['ID', 'Nazwa', 'Typ_Pełny', 'Status', 'Cena_Range', 'Cena_Stara', 'Miał_Rabat_10%', 
-                    'Cena_Faktyczna', 'Grupa_Klienta', 'Cena_Docelowa', 'Sugerowany_Rabat',
-                    'Wzrost_Kwota', 'Wzrost_%_Od_Faktycznej', 'Wzrost_%_Bez_Rabatu']
-    
-    # Sprawdź czy wszystkie kolumny istnieją
-    for col in display_cols:
-        if col not in df.columns:
-            df[col] = None
-    
-    df_display = df[display_cols].copy()
+    # Sprawdzenie czy kolumny istnieją
+    available_cols = [col for col in display_cols if col in df.columns]
+    df_display = df[available_cols].copy()
     
     # Formatuj Status z kolorami
-    df_display['Status'] = df_display['Status'].apply(
-        lambda x: '🟢 Zielony' if x == 'Zielony' 
-                  else '🟡 Żółty' if x == 'Żółty'
-                  else '🔴 Czerwony' if x == 'Czerwony'
-                  else '⚫ Czarny' if x == 'Czarny'
-                  else '❓ Nieznany'
-    )
+    if 'Status' in df_display.columns:
+        df_display['Status'] = df_display['Status'].apply(
+            lambda x: '🟢 Zielony' if x == 'Zielony' 
+                      else '🟡 Żółty' if x == 'Żółty'
+                      else '🔴 Czerwony' if x == 'Czerwony'
+                      else '⚫ Czarny' if x == 'Czarny'
+                      else '❓ Nieznany'
+        )
     
-    df_display.columns = ['ID', 'Nazwa', 'Typ', '📊 Status', 'Widełka', 'Cennik (bez rabatu)', 'Miał rabat?', 
-                          'Płacili (mc)', '👑 Grupa Klienta', '💰 Nowa Cena', '💳 Sugerowany rabat (PLN)',
-                          'Wzrost PLN', 'Wzrost % (z rabatem)', 'Wzrost % (gdyby brak rabatu)']
+    # Zmień nazwy kolumn na user-friendly
+    col_mapping = {
+        'ID': 'ID',
+        'Nazwa': 'Nazwa',
+        'Typ_Umowy': 'Typ',
+        'Status': '📊 Status',
+        'Cena_Range': 'Widełka',
+        'Cena_Stara': 'Cena Stara',
+        'Grupa_Klienta': '👑 Grupa Klienta',
+        'Cena_Docelowa': '💰 Nowa Cena'
+    }
     
-    # Format
-    df_display['Miał rabat?'] = df_display['Miał rabat?'].apply(
-        lambda x: '✓ TAK' if x == 1 else '✗ Nie' if x == 0 else '?'
-    )
+    df_display = df_display.rename(columns={k: v for k, v in col_mapping.items() if k in df_display.columns})
     
     return df_display
