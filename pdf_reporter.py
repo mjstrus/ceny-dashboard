@@ -251,19 +251,19 @@ def create_summary_report(summary: dict, df: pd.DataFrame, filename: str = None)
         # Oblicz szerokości kolumn - DUŻE (wieloliniowe nagłówki)
         # Custom widths dla każdej kolumny - BARDZO KOMPAKTOWE
         col_width_map = {
-            'Nazwa': 1.5,                    # Nazwa firmy
-            'Typ': 0.45,                     # KH/KPIR/Ryczałt
-            'VAT': 0.35,                     # tak/nie
-            'Status': 0.6,                   # 🟢 Zielony/🔴 Czarny
-            'Widełki': 0.5,                  # 21-50, 100+, itd
-            'Miał rabat 10%?': 0.6,          # 0 lub 1
-            'Cena Stara': 0.65,              # Liczba
-            'Grupa klienta': 0.7,            # Standard/Indywidualna/VIP
-            'Cena Bazowa': 0.65,             # Liczba (nowa kolumna)
-            'Cena Nowa': 0.65,               # Liczba
-            '% Rabatu': 0.55,                # Liczba % (nowa kolumna)
-            'Wzrost PLN': 0.65,              # Liczba
-            'Wzrost %': 0.55,                # Liczba %
+            'Nazwa': 2.3,                    # ZWIĘKSZONA! (było 1.5") - TYLKO TO!
+            'Typ': 0.45,                     # Bez zmian!
+            'VAT': 0.35,                     # Bez zmian!
+            'Status': 0.6,                   # Bez zmian!
+            'Widełki': 0.5,                  # Bez zmian!
+            'Miał rabat 10%?': 0.6,          # Bez zmian!
+            'Cena Stara': 0.65,              # Bez zmian!
+            'Grupa klienta': 0.7,            # Bez zmian!
+            'Cena Bazowa': 0.65,             # Bez zmian!
+            'Cena Nowa': 0.65,               # Bez zmian!
+            '% Rabatu': 0.55,                # Bez zmian!
+            'Wzrost PLN': 0.65,              # Bez zmian!
+            'Wzrost %': 0.55,                # Bez zmian!
         }
         
         col_widths = []
